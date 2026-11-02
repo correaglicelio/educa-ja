@@ -340,6 +340,13 @@ td.ideb-baixo{color:var(--bad); font-weight:700}
 .legenda-m span{display:inline-flex; align-items:center; gap:6px}
 .legenda-m i{width:3px; height:14px; border-radius:2px; background:var(--ink)} .legenda-m i.md{background:var(--r-est)}
 .medidores{display:grid; gap:18px}
+.posicoes{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.pos-item{border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:grid; gap:6px; align-content:start}
+.pos-item.destaque{border-color:color-mix(in srgb, var(--mc, var(--accent)) 45%, var(--line)); background:color-mix(in srgb, var(--mc, var(--accent)) 7%, var(--surface))}
+.pos-tit{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted)}
+.pos-item .rank b{font-size:38px}
+.pos-sub{margin:0; font-size:14px} .pos-sub b.bad{color:var(--bad)}
+@media (max-width:600px){ .posicoes{grid-template-columns:1fr} }
 .selo-st{display:inline-flex; gap:6px; align-items:center; border-radius:999px; padding:3px 10px; font-weight:700; font-size:13px}
 .selo-st.ok{background:var(--ok-soft); color:var(--ok)} .selo-st.bad{background:var(--bad-soft); color:var(--bad)} .selo-st.warn{background:var(--warn-soft); color:var(--warn)}
 .envio{display:flex; gap:12px; align-items:flex-start; border-radius:var(--r); padding:12px 14px; font-size:14px; border:1px solid var(--line); background:var(--surface)}
@@ -1289,6 +1296,23 @@ function renderGastos(){
   const envIco = st.nivel ? ICO.info : ICO_CAL;
   el.innerHTML = cabecalhoG(titulo, periodoGastos(), acoes) + `
     <div class="envio ${st.cls}">${envIco}<div><b>Envio ao ${T("siope", "SIOPE")}:</b> ${esc(st.txt)}</div></div>
+    ${(() => {
+      // 2026: só entre os municípios que já enviaram o mesmo bimestre (parcial se compara com parcial)
+      const parc = u ? gv(b, "mde") : null;
+      const listaB = u ? todos.map(x => gv(x.b?.[u - 1], "mde")).filter(v => v != null).sort((x, y) => y - x) : [];
+      const posB = parc == null ? null : listaB.filter(v => v > parc).length + 1;
+      return `<div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>${T("mde", "% dos impostos aplicados em educação")}, do maior para o menor</small></h3>
+      <div class="posicoes">
+        <div class="pos-item destaque"><div class="pos-tit">${G_META.atual} · ${T("parcial", "até o " + (u ? curtoBim(u) : "–"))}</div>
+          ${posB ? `<div class="rank"><b>${posB}º</b><span>de ${fmt(listaB.length)} municípios que já enviaram o ${curtoBim(u)}</span></div>
+            <p class="pos-sub">${esc(nomeMun(S.mun))}: <b>${fPct(parc)}</b> · ${T("mediana", "mediana")} ${esc(siglaUF(S.uf))}: ${fPct(mediana(listaB))}</p>`
+          : `<p class="src">A prefeitura ainda não enviou nenhum bimestre de ${G_META.atual}.</p>`}</div>
+        <div class="pos-item"><div class="pos-tit">${anoP} · ${T("anofechado", "ano fechado")}</div>
+          ${pos ? `<div class="rank"><b>${pos}º</b><span>de ${fmt(lista.length)} municípios que enviaram</span></div>
+            <p class="pos-sub">${esc(nomeMun(S.mun))}: <b class="${mde < 25 ? "bad" : ""}">${fPct(mde)}</b> · ${abaixo ? `<span class="selo-st bad">${fmt(abaixo)} abaixo de 25%</span>` : `<span class="selo-st ok">todos acima de 25%</span>`}</p>`
+          : `<p class="src">Sem dado de ${anoP} para comparar.</p>`}</div>
+      </div>
+      <p class="src" style="margin-top:12px">Aplicar mais não quer dizer gastar melhor, e aplicar o mínimo não é ilegal: a lei exige ficar acima de 25% no ano inteiro. No ano em curso, a comparação é só com quem já enviou o mesmo bimestre.</p></div>`; })()}
     <div class="empilha">
       <div class="box"><h3>${G_META.atual}, ${T("parcial", "ano em curso")} <small>${u ? "acumulado até o " + nomeBim(u).replace(/ \(.*/, "") + " " + nomeBim(u).replace(/^[^(]*/, "") : "nada enviado"}</small></h3>
         ${b ? `<div class="aviso" style="margin-bottom:14px">${ICO.info}<div>Valores acumulados até o ${curtoBim(u)}. No meio do ano o percentual costuma ficar abaixo do mínimo: compare com a mediana do estado no mesmo bimestre.</div></div>
@@ -1314,13 +1338,7 @@ function renderGastos(){
       <div class="kpi"><div class="k">${T("orcamento", "Educação no orçamento")}</div><div class="v">${fPct(gv(a, "peso_educacao"))}</div><div class="s">de todas as despesas da prefeitura em ${anoP}</div></div>
       <div class="kpi ${(gv(a, "fundeb_saldo") || 0) > 0 ? "" : ""}"><div class="k">${T("saldofin", "Saldo do FUNDEB")} no fim de ${anoP}</div><div class="v">${fMi(gv(a, "fundeb_saldo"))}</div><div class="s">não usado do ano: ${fMi(gv(a, "fundeb_nao_usado"))}</div></div>
     </div>
-    <div class="grid2">
-      <div class="box"><h3>Impostos aplicados em educação, ano a ano <small>(ano fechado)</small></h3>${colunas(anos.map((_, i) => gv(g?.a?.[i], "mde")), anos, 25)}</div>
-      <div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>% aplicado em ${anoP}</small></h3>
-        ${pos ? `<div class="rank"><b>${pos}º</b><span>de ${fmt(lista.length)} municípios que enviaram (do maior para o menor %)</span></div>` : `<p class="src">Sem dado de ${anoP} para comparar.</p>`}
-        <p style="margin:12px 0 0">${abaixo ? `<span class="selo-st bad">${fmt(abaixo)} abaixo de 25%</span>` : `<span class="selo-st ok">Todos acima de 25%</span>`} em ${esc(nomeUF(S.uf))} no ano de ${anoP}.</p>
-        <p class="src" style="margin-top:10px">Aplicar mais não quer dizer gastar melhor, e aplicar o mínimo não é ilegal. O que a lei exige é ficar acima de 25%.</p></div>
-    </div>
+    <div class="box"><h3>Impostos aplicados em educação, ano a ano <small>(ano fechado)</small></h3>${colunas(anos.map((_, i) => gv(g?.a?.[i], "mde")), anos, 25)}</div>
     <p class="src">${fonteG()}</p>`;
 }
 function estadoGastos(){
