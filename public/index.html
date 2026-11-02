@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Educa Já</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Dados abertos da educação do seu município: escolas, Ideb, merenda, transporte e quanto a prefeitura aplica no ensino.">
+<meta name="theme-color" content="#23338C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Educa Já">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+
+</style>
+<style>
+/* Versão provisória (Etapa 0 do cronograma): mostra que o site está no ar e o teste das fontes.
+   O app completo (barra de local, menus, Painel) entra junto com o primeiro módulo. */
+:root{
+  --bg:#F4F6FB; --surface:#FFFFFF; --ink:#141A33; --muted:#4A5274; --line:#DCE1EE;
+  --accent:#23338C; --accent-ink:#FFFFFF; --accent-soft:#E6E9F7; --lapis:#F2B705; --lapis-ink:#7A5A00; --lapis-soft:#FDF3D2;
+  --ok:#11845B; --ok-soft:#DEF3EA; --bad:#C2283B; --bad-soft:#FBE1E4;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Public Sans", "Segoe UI", system-ui, sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F1324; --surface:#171C33; --ink:#E9ECF7; --muted:#A6AECB; --line:#2A3152;
+  --accent:#9DAAF2; --accent-ink:#0F1324; --accent-soft:#1F2850; --lapis:#F5C842; --lapis-ink:#F5D57A; --lapis-soft:#3A3014;
+  --ok:#4FD19D; --ok-soft:#123A2C; --bad:#F27A8A; --bad-soft:#40161E; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F1324; --surface:#171C33; --ink:#E9ECF7; --muted:#A6AECB; --line:#2A3152;
+  --accent:#9DAAF2; --accent-ink:#0F1324; --accent-soft:#1F2850; --lapis:#F5C842; --lapis-ink:#F5D57A; --lapis-soft:#3A3014;
+  --ok:#4FD19D; --ok-soft:#123A2C; --bad:#F27A8A; --bad-soft:#40161E; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.5}
+.topo{background:#23338C; color:#fff}
+.wrap{max-width:900px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.topo .wrap{padding-block:22px; display:flex; align-items:center; gap:14px}
+.topo svg{width:46px; height:46px; flex:none}
+.topo b{font-family:var(--f-display); font-weight:800; font-size:28px; letter-spacing:-.02em; line-height:1}
+.topo b span{color:#F2B705}
+.topo small{display:block; color:#C9D0F2; font-size:13px; margin-top:4px}
+main{padding-block:24px 40px; display:grid; grid-template-columns:minmax(0,1fr); gap:16px}
+.box{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px 20px}
+h1,h2{font-family:var(--f-display); margin:0 0 6px; text-wrap:balance}
+h1{font-size:24px} h2{font-size:18px}
+p{margin:0 0 6px} .muted{color:var(--muted)}
+.selo{display:inline-block; background:var(--lapis-soft); color:var(--lapis-ink); font-weight:700; font-size:12px; border-radius:999px; padding:3px 10px; margin-bottom:8px}
+.tab{overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:14px}
+th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted)}
+td.n{font-variant-numeric:tabular-nums; white-space:nowrap}
+.st{display:inline-block; font-weight:700; font-size:12px; border-radius:999px; padding:2px 9px}
+.st.ok{background:var(--ok-soft); color:var(--ok)} .st.bad{background:var(--bad-soft); color:var(--bad)}
+.abas{display:flex; gap:6px; margin:6px 0 10px; flex-wrap:wrap}
+.abas button{border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:5px 14px; font:inherit; font-weight:600; cursor:pointer}
+.abas button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+:focus-visible{outline:3px solid var(--lapis); outline-offset:2px}
+</style>
+
+<header class="topo">
+  <div class="wrap">
+    <svg viewBox="0 0 88 88" aria-hidden="true"><path d="M44 6c-17 0-30 13-30 30 0 22 30 46 30 46s30-24 30-46C74 19 61 6 44 6z" fill="#F2B705"/><path d="M28 32c6-3 11-3 16 1v20c-5-4-10-4-16-1z" fill="#FFFFFF"/><path d="M60 32c-6-3-11-3-16 1v20c5-4 10-4 16-1z" fill="#E6E9F7"/><path d="M44 33v20" stroke="#23338C" stroke-width="2"/></svg>
+    <div><b>Educa <span>Já</span></b><small>Dados abertos da educação do seu município</small></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="box">
+    <span class="selo">Em construção</span>
+    <h1>O Educa Já está sendo montado</h1>
+    <p class="muted">Em breve: escolas, Ideb, merenda, transporte, dinheiro na escola e quanto a prefeitura aplica no ensino, para cada município do Brasil, começando por Mato Grosso.</p>
+    <p class="muted" id="muns">Carregando a lista de municípios…</p>
+  </section>
+
+  <section class="box">
+    <h2>Teste das fontes de dados</h2>
+    <p class="muted" id="st-quando">Carregando…</p>
+    <div class="abas" id="st-abas" role="group" aria-label="Onde o teste rodou"></div>
+    <div class="tab"><table>
+      <thead><tr><th>Fonte</th><th>Situação</th><th>Tamanho</th><th>Atualizado</th></tr></thead>
+      <tbody id="st-corpo"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const dataBR = s => { if(!s) return ""; const d = new Date(s); return isNaN(d) ? esc(s) : d.toLocaleDateString("pt-BR"); };
+  const quandoBR = s => { const d = new Date(s); return isNaN(d) ? "" : d.toLocaleString("pt-BR", {dateStyle:"short", timeStyle:"short"}); };
+
+  fetch("data/municipios.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : null).then(j => {
+    const el = document.getElementById("muns");
+    if(!j){ el.textContent = "A lista de municípios ainda não foi gerada."; return; }
+    const mt = j.m.filter(x => x[2] === "MT").length;
+    el.textContent = j.m.length.toLocaleString("pt-BR") + " municípios carregados (" + mt + " em Mato Grosso). Fonte: " + j.fonte + ".";
+  }).catch(() => {});
+
+  let dados = null, atual = null;
+  function mostrar(qual){
+    atual = qual;
+    const r = dados.rodadas[qual];
+    document.querySelectorAll("#st-abas button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === qual));
+    const ok = r.fontes.filter(f => f.ok).length;
+    document.getElementById("st-quando").textContent = ok + " de " + r.fontes.length + " fontes responderam · teste feito em " + quandoBR(r.quando) + " · " + r.onde;
+    document.getElementById("st-corpo").innerHTML = r.fontes.map(f =>
+      "<tr><td>" + esc(f.nome) + "</td><td>" + (f.ok ? '<span class="st ok">No ar</span>' : '<span class="st bad">Falhou</span>') +
+      "</td><td class='n'>" + (f.bytes ? (f.bytes/1e6).toLocaleString("pt-BR", {maximumFractionDigits:1}) + " MB" : "") +
+      "</td><td class='n'>" + (f.ok ? dataBR(f.atualizado) : '<span class="muted">' + esc(f.erro) + "</span>") + "</td></tr>").join("");
+  }
+  fetch("data/status_fontes.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : null).then(j => {
+    if(!j || !j.rodadas){ document.getElementById("st-quando").textContent = "O teste ainda não rodou."; return; }
+    dados = j;
+    const nomes = {pc:"No PC", github:"No GitHub"};
+    const ks = Object.keys(j.rodadas);
+    document.getElementById("st-abas").innerHTML = ks.map(k => '<button type="button" data-k="' + k + '">' + (nomes[k] || k) + "</button>").join("");
+    document.getElementById("st-abas").addEventListener("click", e => { const b = e.target.closest("button"); if(b) mostrar(b.dataset.k); });
+    mostrar(ks.includes("github") ? "github" : ks[0]);
+  }).catch(() => { document.getElementById("st-quando").textContent = "Não consegui ler o teste das fontes."; });
+
+  if("serviceWorker" in navigator && location.protocol === "https:")
+    navigator.serviceWorker.register("sw.js", {updateViaCache:"none"}).catch(() => {});
+})();
+</script>
+
+</body>
+</html>

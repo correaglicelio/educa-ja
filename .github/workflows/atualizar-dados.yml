@@ -1,0 +1,91 @@
+# Educa Já: atualiza os dados toda segunda-feira e publica o site no GitHub Pages.
+# Custo: zero (GitHub Actions e Pages são gratuitos para repositórios públicos).
+# Para rodar na hora: aba Actions > "Atualizar dados e publicar" > Run workflow.
+name: Atualizar dados e publicar
+
+on:
+  schedule:
+    - cron: "43 10 * * 1"   # segunda-feira, 07:43 em Brasília
+  workflow_dispatch:        # botão "Run workflow"
+  push:
+    branches: [main]        # mudanças no site: só republica (não coleta)
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  coletar:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    concurrency:
+      group: educa-ja-coleta
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Cada coleta é independente: se uma falhar (site do governo fora do ar ou bloqueando
+      # acesso de fora do Brasil), as outras seguem e o que deu certo é salvo.
+      - name: Teste das fontes de dados (respondem de fora do Brasil?)
+        id: fontes
+        run: python scripts/testar_fontes.py
+        continue-on-error: true
+        timeout-minutes: 15
+      - name: Tabela de municípios (Censo Escolar; plano B SIOPE)
+        id: municipios
+        run: python scripts/coletar_municipios.py
+        continue-on-error: true
+        timeout-minutes: 45
+
+      - name: Resumo da coleta
+        if: always()
+        run: |
+          {
+            echo "## Coleta de $(date -u +%d/%m/%Y)"
+            echo "| Dados | Resultado |"
+            echo "|---|---|"
+            echo "| Teste das fontes | ${{ steps.fontes.outcome }} |"
+            echo "| Municípios | ${{ steps.municipios.outcome }} |"
+            echo ""
+            echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Salvar dados no repositório
+        run: |
+          git config user.name "educa-ja-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
+          git commit -m "Dados atualizados em $(date -u +%d/%m/%Y)"
+          git pull --rebase --strategy-option=theirs origin main || true
+          git push
+
+  publicar:
+    needs: [coletar]
+    if: always() && (needs.coletar.result == 'success' || needs.coletar.result == 'skipped')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: educa-ja-pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/montar_site.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,17 @@
+build/
+__pycache__/
+work/
+dados/
+*.pyc
+*.part
+*.tmp
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/release/
+*.jks
+*.keystore
