@@ -1169,12 +1169,12 @@ function renderEnem(){
       <div class="kpi"><div class="k">${T("enmedia", "Média geral")} ${ano}</div><div class="v">${f1(m.media)}</div><div class="s">em ${ant}: ${f1(ma?.media)} ${dif(m.media, ma?.media)}</div></div>
       <div class="kpi"><div class="k">${T("redacao", "Redação")}</div><div class="v">${f0(m.notas?.[4])}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(uf?.notas?.[4])} · Brasil: ${f0(br?.notas?.[4])}</div></div>
       <div class="kpi"><div class="k">Matemática</div><div class="v">${f0(m.notas?.[3])}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(uf?.notas?.[3])} · Brasil: ${f0(br?.notas?.[3])}</div></div>
-      <div class="kpi ${faltou != null && faltou >= 30 ? "atencao" : ""}"><div class="k">${T("enpart", "Participantes")}</div><div class="v">${fmt(m.n)}</div><div class="s">de ${fmt(m.insc)} inscritos · ${faltou}% faltaram</div></div>
+      <div class="kpi ${faltou != null && faltou >= 30 ? "atencao" : ""}"><div class="k">${T("enpart", "Participantes")}</div><div class="v">${fmt(m.n)}</div><div class="s">de ${fmt(m.insc)} inscritos · ${faltou}% faltaram a algum dia de prova</div></div>
     </div>
     <div class="grid2">
       <div class="box"><h3>Notas por ${T("enareas", "área")} <small>ENEM ${ano}</small></h3>
-        ${rsTab([["Área"], [esc(nomeMun(S.mun)).length > 16 ? "Cidade" : esc(nomeMun(S.mun)), "n"], [esc(siglaUF(S.uf)), "n"], ["Brasil", "n"], [String(ant), "n"]],
-          ORDEM_AREAS.map(i => [ENEM_META.areas[i] === "Redação" ? T("redacao", "Redação") : ENEM_META.areas[i], `<b>${f1(m.notas?.[i])}</b>`, f1(uf?.notas?.[i]), f1(br?.notas?.[i]), `${f1(ma?.notas?.[i])}`]))}</div>
+        ${rsTab([["Área"], ["Cidade", "n"], [esc(siglaUF(S.uf)), "n"], ["Brasil", "n"], [`Cidade ${ant}`, "n"]],
+          ORDEM_AREAS.map(i => [i === 4 ? T("redacao", "Redação") : ["Natureza", "Humanas", "Linguagens", "Matemática"][i], `<b>${f1(m.notas?.[i])}</b>`, f1(uf?.notas?.[i]), f1(br?.notas?.[i]), `${f1(ma?.notas?.[i])}`]))}</div>
       <div class="box"><h3>Por ${T("rede", "rede")} <small>escolas de ${esc(nomeMun(S.mun))}</small></h3>
         ${redes.length ? rsTab([["Rede"], ["Participantes", "n"], [`Média ${ano}`, "n"], [String(ant), "n"]],
           redes.map(x => [`<i class="dot" style="background:${COR_REDE[x.r]}"></i>${REDE[x.r]}`, fmt(x.a.n), `<b>${f1(x.a.media)}</b>`, f1(x.b?.media)])) : ""}
