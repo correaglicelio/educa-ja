@@ -833,23 +833,34 @@ function caixaIdebFicha(cod){
 }
 
 function grafico(series, anos){
-  const W = 640, H = 250, ml = 34, mr = 46, mt = 14, mb = 28;
+  const estreito = innerWidth < 600;      // no celular o desenho é menor, então as letras ficam maiores na tela
+  const W = estreito ? 360 : 640, H = estreito ? 230 : 250, ml = 28, mr = estreito ? 44 : 52, mt = 14, mb = 28;
   const todos = series.flatMap(s => s.v.filter(v => v != null));
   if (!todos.length) return "";
   let lo = Math.floor(Math.min(...todos) - .3), hi = Math.ceil(Math.max(...todos) + .3);
   lo = Math.max(0, lo); hi = Math.min(10, Math.max(hi, lo + 2));
   const x = i => ml + i * (W - ml - mr) / (anos.length - 1), y = v => mt + (hi - v) * (H - mt - mb) / (hi - lo);
-  let g = "";
+  let g = ""; const rotulos = [];
   for (let v = lo; v <= hi; v++) g += `<line class="grade" x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}"/><text x="${ml - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
-  anos.forEach((a, i) => { if (i % (anos.length > 8 ? 2 : 1) === 0 || i === anos.length - 1) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${a}</text>`; });
+  const passo = estreito ? (anos.length > 6 ? 5 : 2) : (anos.length > 8 ? 2 : 1);
+  anos.forEach((a, i) => { if (i % passo === 0 || i === anos.length - 1) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="${i === anos.length - 1 && estreito ? "end" : "middle"}">${a}</text>`; });
   for (const s of series){
     if (s.meta){ s.v.forEach((v, i) => { if (v != null) g += `<rect x="${x(i) - 4}" y="${y(v) - 4}" width="8" height="8" transform="rotate(45 ${x(i)} ${y(v)})" fill="var(--surface)" stroke="${s.cor}" stroke-width="2"><title>Meta ${anos[i]}: ${f1(v)}</title></rect>`; }); continue; }
     let d = "", aberto = false;
     s.v.forEach((v, i) => { if (v == null){ aberto = false; return; } d += (aberto ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); aberto = true; });
     g += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="${s.forte ? 3.2 : 2.2}" ${s.trac ? `stroke-dasharray="${s.trac}"` : ""} stroke-linejoin="round" stroke-linecap="round"/>`;
-    s.v.forEach((v, i) => { if (v != null) g += `<circle cx="${x(i)}" cy="${y(v)}" r="${s.forte ? 4.2 : 3}" fill="${s.cor}"><title>${esc(s.nome)} ${anos[i]}: ${f1(v)}</title></circle>`; });
+    s.v.forEach((v, i) => { if (v != null) g += `<circle cx="${x(i)}" cy="${y(v)}" r="${(s.forte ? 4.2 : 3) * (estreito ? .8 : 1)}" fill="${s.cor}"><title>${esc(s.nome)} ${anos[i]}: ${f1(v)}</title></circle>`; });
     const li = s.v.map((v, i) => v == null ? -1 : i).filter(i => i >= 0).pop();
-    if (li != null && s.rotulo) g += `<text class="rot-val" x="${x(li) + 8}" y="${y(s.v[li]) + 4 + (s.dy || 0)}" style="fill:${s.cor}">${f1(s.v[li])}</text>`;
+    if (li != null && s.rotulo) rotulos.push({x: x(li) + 9, y: y(s.v[li]) + 4, alvo: y(s.v[li]), cor: s.cor, t: f1(s.v[li])});
+  }
+  // rótulos do fim das linhas: afasta os que ficariam um em cima do outro (mínimo 15 px)
+  rotulos.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < rotulos.length; i++) if (rotulos[i].y - rotulos[i - 1].y < 15) rotulos[i].y = rotulos[i - 1].y + 15;
+  const fundo = H - mb + 2;
+  if (rotulos.length && rotulos.at(-1).y > fundo){ const d = rotulos.at(-1).y - fundo; rotulos.forEach(r => r.y -= d); }
+  for (const r of rotulos){
+    if (Math.abs(r.y - 4 - r.alvo) > 3) g += `<line x1="${r.x - 7}" y1="${r.alvo}" x2="${r.x - 2}" y2="${r.y - 4}" stroke="${r.cor}" stroke-width="1.2"/>`;
+    g += `<text class="rot-val" x="${r.x}" y="${r.y}" style="fill:${r.cor}">${r.t}</text>`;
   }
   return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução do Ideb de ${anos[0]} a ${anos[anos.length - 1]}">${g}</svg>
     <div class="leg-g">${series.map(s => `<span><i class="${s.meta ? "meta" : s.trac ? (s.trac.startsWith("2") ? "pont" : "trac") : ""}" style="--c:${s.cor}"></i>${esc(s.nome)}</span>`).join("")}</div>`;
@@ -1077,6 +1088,8 @@ function ligar(){
     if (e.target.id === "e-ord"){ S.f.ord = e.target.value; renderLista(); }
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && fichaAberta) fecharFicha(); });
+  let estreitoAntes = innerWidth < 600;
+  addEventListener("resize", () => { const agora = innerWidth < 600; if (agora !== estreitoAntes){ estreitoAntes = agora; if (S.rows.length) renderAprendizagem(); } });
 }
 
 /* ===================== início ===================== */
