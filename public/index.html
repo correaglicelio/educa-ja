@@ -248,6 +248,38 @@ tr.tot td{font-weight:700; border-bottom:0}
 .rs-card.breve p{margin:0; font-size:13.5px; color:var(--muted)}
 .rs-sec{margin:6px 0 0; font-family:var(--f-display); font-size:19px; font-weight:800; letter-spacing:-.01em}
 
+/* aprendizagem */
+.escopo{display:inline-flex; background:var(--sunk); border-radius:999px; padding:3px; max-width:100%; overflow-x:auto; scrollbar-width:none}
+.escopo button{border:0; background:transparent; padding:7px 14px; border-radius:999px; font-weight:700; font-size:14px; color:var(--muted); white-space:nowrap}
+.escopo button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:inset 0 -3px 0 var(--lapis), var(--shadow)}
+.escopo button:disabled{opacity:.45; cursor:default}
+.seletores{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center}
+.seletores .rot{font-size:12.5px; font-weight:600; color:var(--muted); margin-right:6px}
+.kpi .var{font-size:13px; font-weight:700; margin-top:2px}
+.var.sobe{color:var(--ok)} .var.desce{color:var(--bad)} .var.igual{color:var(--muted)}
+.grafico{width:100%; height:auto; display:block}
+.grafico text{fill:var(--muted); font-family:var(--f-body); font-size:12px}
+.grafico .rot-val{fill:var(--ink); font-weight:700; font-size:12.5px}
+.grafico .grade{stroke:var(--line); stroke-width:1}
+.leg-g{display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--muted); margin-top:8px}
+.leg-g span{display:inline-flex; align-items:center; gap:7px}
+.leg-g i{width:22px; height:0; border-top:3px solid var(--c)}
+.leg-g i.trac{border-top-style:dashed} .leg-g i.pont{border-top-style:dotted}
+.leg-g i.meta{width:10px; height:10px; border:2px solid var(--c); border-radius:2px; transform:rotate(45deg)}
+.rank{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.rank b{font-family:var(--f-display); font-weight:800; font-size:34px; line-height:1}
+.rank span{color:var(--muted)}
+.faixas{display:flex; height:12px; border-radius:6px; overflow:hidden; margin:12px 0 4px; background:var(--sunk)}
+.faixas div{height:100%}
+.ideb-n{font-family:var(--f-display); font-weight:800; font-variant-numeric:tabular-nums}
+td.ideb-baixo{color:var(--bad); font-weight:700}
+.explica{font-size:14px; color:var(--muted)}
+.explica p{margin:0 0 8px} .explica b{color:var(--ink)}
+.esc .ideb{grid-column:2 / span 2; font-size:13px; margin-top:6px; color:var(--ink)}
+.esc .ideb b{font-variant-numeric:tabular-nums}
+.rs-periodo{font-size:12.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:8px; display:flex; gap:6px; align-items:flex-start}
+.rs-periodo svg{width:14px; height:14px; flex:none; margin-top:2px}
+.rs-big.alerta{color:var(--bad)} .rs-big.atencao{color:var(--warn)}
 .loading{position:absolute; inset:0; display:grid; place-items:center; background:color-mix(in srgb, var(--bg) 75%, transparent); z-index:900; font-weight:700; color:var(--muted)}
 .toast{position:fixed; left:50%; bottom:calc(88px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:3000; background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; font-weight:700; font-size:14px; box-shadow:var(--shadow); max-width:calc(100% - 32px)}
 .tip{cursor:help; text-decoration:underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset:3px}
@@ -270,6 +302,8 @@ tr.tot td{font-weight:700; border-bottom:0}
   .infra{grid-template-columns:minmax(0,1fr)}
   .ptile{width:46px; height:46px; border-radius:12px} .ptile .dico{width:26px; height:26px}
   .kpi .v{font-size:27px}
+  .seletores > div{display:flex; flex-direction:column; gap:4px; max-width:100%}
+  .escopo button{padding:6px 11px; font-size:13.5px}
   .ficha-fundo{place-items:end stretch; padding:0}
   .ficha{width:100%; max-height:92%; border-radius:18px 18px 0 0; padding-bottom:env(safe-area-inset-bottom,0px)}
   .tabbar{display:grid; grid-template-columns:repeat(var(--n, 2), minmax(0,1fr)); background:var(--surface); border-top:1px solid var(--line);
@@ -312,11 +346,11 @@ tr.tot td{font-weight:700; border-bottom:0}
     <nav class="views" aria-label="Seções">
       <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg><span>Painel</span></button>
       <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg><span>Escolas</span></button>
+      <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg><span>Aprendizagem</span></button>
     </nav>
     <div>
       <p class="menu-tit">Em breve</p>
       <div class="views" aria-label="Seções em construção">
-        <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprendizagem</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo escolar</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</span>
@@ -341,11 +375,13 @@ tr.tot td{font-weight:700; border-bottom:0}
   <main class="main">
     <div class="view" id="v-painel"><div class="inner" id="painel"></div></div>
     <div class="view" id="v-escolas" hidden><div class="inner" id="escolas"></div></div>
+    <div class="view" id="v-aprendizagem" hidden><div class="inner" id="aprendizagem"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:2">
+  <nav class="tabbar" aria-label="Navegação" style="--n:3">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
+    <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprendizagem</button>
   </nav>
 </div>
 
@@ -362,7 +398,9 @@ const store = {
   get(k){ try { return JSON.parse(localStorage.getItem("educaja:" + k)); } catch { return null; } },
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
-const PADRAO = {uf: 51, mun: 5106752};   // Mato Grosso, Pontes e Lacerda
+const PADRAO = {uf: 51, mun: 5106752};
+const VIEWS = ["painel", "escolas", "aprendizagem"];
+const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
 const ICO = {
@@ -399,7 +437,9 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-const S = {uf: null, mun: null, view: "painel", rows: [],
+let IDEB_META = null, IDEB_BR = null;
+const IDEB = new Map();     // Ideb por UF
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -452,6 +492,12 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarIdeb(uf){
+  if (!IDEB_META || !IDEB_META.ufs.includes(uf)) return null;
+  if (!IDEB.has(uf)) IDEB.set(uf, getJSON(`data/ideb/${uf}.json`).catch(e => { IDEB.delete(uf); throw e; }));
+  return IDEB.get(uf);
+}
+
 /* ===================== local (estado e município) ===================== */
 function preencherUFs(){
   const disp = new Set(META.ufs);
@@ -463,7 +509,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { S.rows = await carregarUF(uf); nota(""); }
+  try { [S.rows, S.ideb] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null)]); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -510,14 +556,14 @@ function marcarSug(i){
 function setView(v, {semHash} = {}){
   const m = /^escola-(\d{8})$/.exec(v || "");
   if (m){ buscarCodigo(+m[1], {doLink: true}); return; }
-  if (!["painel", "escolas"].includes(v)) v = "painel";
+  if (!VIEWS.includes(v)) v = "painel";
   S.view = v;
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
-  $("#v-painel").hidden = v !== "painel"; $("#v-escolas").hidden = v !== "escolas";
+  VIEWS.forEach(k => { $("#v-" + k).hidden = k !== v; });
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -543,7 +589,7 @@ function renderPainel(){
   const alertas = faltas.length
     ? faltas.map(f => `<li><span class="rs-pill bad">${fmt(f.lista.length)}</span>escola${f.lista.length > 1 ? "s" : ""} pública${f.lista.length > 1 ? "s" : ""} ${esc(f.nome)}</li>`).join("")
     : `<li><span class="rs-pill ok">OK</span>Todas as escolas públicas têm água potável, energia e banheiro</li>`;
-  const breve = [["d-aprend", "Aprendizagem", "Ideb e Saeb 2025 da rede e de cada escola."], ["d-gastos", "Gastos", "Quanto a prefeitura aplica em educação (mínimo de 25%) e o FUNDEB."],
+  const breve = [["d-gastos", "Gastos", "Quanto a prefeitura aplica em educação (mínimo de 25%) e o FUNDEB."],
     ["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
     ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
@@ -556,7 +602,9 @@ function renderPainel(){
         <ul class="rs-lista">${alertas}
           <li><span class="rs-pill ${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${internet.p == null ? "–" : Math.round(internet.p) + "%"}</span>das públicas com internet para os alunos</li></ul>
         <span class="rs-link">Ver escolas →</span>
+        <span class="rs-periodo">${ICO_CAL}<span>Censo Escolar ${META.ano} · situação na ${esc(META.data_referencia)}</span></span>
       </button>
+      ${cardAprendizagem()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -657,6 +705,7 @@ function renderLista(){
         ${ativa(r) ? "" : `<span class="pill paral">Paralisada</span>`}
         ${S.mun ? "" : `<span class="pill">${esc(nomeMun(r[C.municipio]))}</span>`}</span>
       ${et.length ? `<span class="etapas">${esc(et.join(" · "))}</span>` : ""}
+      ${linhaIdebCard(r[C.codigo])}
       ${falta.length ? `<span class="falta">Escola ${esc(falta.join(", "))}</span>` : ""}
     </button>`; }).join("") + (rows.length > vis.length ? `<button type="button" class="btn mais" id="e-mais" style="grid-column:1/-1">Mostrar mais ${fmt(Math.min(60, rows.length - vis.length))} de ${fmt(rows.length - vis.length)}</button>` : "");
 }
@@ -703,6 +752,228 @@ function copiarLink(cod){
 }
 function mostrarLink(url){ toast("Copie o endereço: " + url); }
 
+
+/* ===================== aprendizagem (Ideb e Saeb) ===================== */
+const ETAPA_NOME = {ai: "Anos iniciais", af: "Anos finais", em: "Ensino médio"};
+const ETAPA_SUB = {ai: "1º ao 5º ano", af: "6º ao 9º ano", em: "1ª à 3ª série"};
+const IX = {ideb: 0, meta: 1, mat: 2, port: 3, n: 4, p: 5};
+const PREF_REDE = {ai: ["Municipal", "Pública", "Estadual"], af: ["Municipal", "Pública", "Estadual"], em: ["Estadual", "Pública"]};
+const REDES_IDEB = ["Municipal", "Estadual", "Pública", "Federal"];
+const f1 = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const f0 = v => v == null ? "–" : Math.round(v).toLocaleString("pt-BR");
+const temIdeb = s => !!(s && s[0] && s[0].some(v => v != null));
+function val(s, k, i){ if (!s) return null; const a = s[IX[k]]; if (!a || !a.length) return null; return a[i ?? a.length - 1] ?? null; }
+const iUlt = () => IDEB_META.anos.length - 1;
+function variacao(s){
+  const a = val(s, "ideb", iUlt()), b = val(s, "ideb", iUlt() - 1);
+  if (a == null || b == null) return "";
+  const d = Math.round((a - b) * 10) / 10;
+  return `<div class="var ${d > 0 ? "sobe" : d < 0 ? "desce" : "igual"}">${d > 0 ? "▲ +" + f1(d) : d < 0 ? "▼ " + f1(d) : "= igual"} desde ${IDEB_META.anos[iUlt() - 1]}</div>`;
+}
+function serieMun(mun, et, rede){ return S.ideb?.m?.[mun]?.[et]?.[rede] || null; }
+function redesMun(mun, et){ const d = S.ideb?.m?.[mun]?.[et] || {}; return REDES_IDEB.filter(r => temIdeb(d[r])); }
+function redeEscolhida(mun, et){
+  const disp = mun ? redesMun(mun, et) : redesEstado(et);
+  if (S.rede && disp.includes(S.rede)) return S.rede;
+  // prefere uma rede com nota na edição mais recente (ou na anterior)
+  const s = r => mun ? serieMun(mun, et, r) : IDEB_BR?.uf?.[S.uf]?.[et]?.[r];
+  const recente = disp.filter(r => val(s(r), "ideb", iUlt()) != null || val(s(r), "ideb", iUlt() - 1) != null);
+  return PREF_REDE[et].find(r => recente.includes(r)) || recente[0] || PREF_REDE[et].find(r => disp.includes(r)) || disp[0] || null;
+}
+/* no estado todo, as redes vêm dos municípios (a planilha do INEP por estado não traz a rede municipal) */
+function redesEstado(et){
+  const tem = new Set();
+  for (const d of Object.values(S.ideb?.m || {})) for (const r of REDES_IDEB) if (val(d[et]?.[r], "ideb", iUlt()) != null) tem.add(r);
+  return REDES_IDEB.filter(r => tem.has(r) && r !== "Federal");
+}
+function serieRef(chave, et, rede){
+  const d = IDEB_BR?.uf?.[chave]?.[et] || {};
+  for (const r of [rede, rede === "Municipal" || rede === "Estadual" ? "Pública" : null, "Total"]) if (r && temIdeb(d[r])) return {s: d[r], rede: r};
+  return null;
+}
+function periodoIdeb(){ return `Ideb ${IDEB_META.ano} · ${esc(IDEB_META.periodo)}`; }
+
+function cardAprendizagem(){
+  if (!IDEB_META) return "";
+  const ult = iUlt();
+  let big, sub, cls = "", lista;
+  if (S.mun && S.ideb){
+    const linhas = ["ai", "af", "em"].map(et => { const r = redeEscolhida(S.mun, et); return {et, r, s: r && serieMun(S.mun, et, r)}; }).filter(x => x.s);
+    if (!linhas.length) return cardVazio("Aprendizagem", "d-aprend", `${esc(lugar())} não tem Ideb ${IDEB_META.ano} divulgado (poucos alunos fizeram a prova).`);
+    const p = linhas[0], v = val(p.s, "ideb", ult), uf = serieRef(S.uf, p.et, p.r);
+    big = f1(v); sub = `${ETAPA_NOME[p.et].toLowerCase()}, rede ${p.r.toLowerCase()} · ${esc(siglaUF(S.uf))}: ${f1(val(uf?.s, "ideb", ult))}`;
+    const caiu = linhas.some(x => { const a = val(x.s, "ideb", ult), b = val(x.s, "ideb", ult - 1); return a != null && b != null && a < b; });
+    cls = p.et === "ai" && v != null && v < 5 ? "rs-alerta" : caiu ? "rs-atencao" : "";
+    lista = linhas.map(x => { const a = val(x.s, "ideb", ult), b = val(x.s, "ideb", ult - 1); const d = a != null && b != null ? Math.round((a - b) * 10) / 10 : null;
+      return `<li><span class="rs-pill ${d == null ? "" : d < 0 ? "bad" : "ok"}">${f1(a)}</span>${ETAPA_NOME[x.et]} · ${x.r.toLowerCase()} ${d == null ? "" : d > 0 ? "(▲ " + f1(d) + ")" : d < 0 ? "(▼ " + f1(Math.abs(d)) + ")" : "(=)"}</li>`; }).join("");
+  } else {
+    const d = IDEB_BR?.uf?.[S.uf]; if (!d) return "";
+    big = f1(val(d.ai?.Total, "ideb", ult)); sub = `anos iniciais, todas as redes de ${esc(siglaUF(S.uf))}`;
+    lista = ["ai", "af", "em"].map(et => `<li><span class="rs-pill">${f1(val(d[et]?.Total, "ideb", ult))}</span>${ETAPA_NOME[et]} · Brasil ${f1(val(IDEB_BR.uf.br?.[et]?.Total, "ideb", ult))}</li>`).join("");
+  }
+  return `<button type="button" class="rs-card ${cls}" data-ir="aprendizagem">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span><h3>Aprendizagem (Ideb)</h3></header>
+    <div class="rs-big ${cls === "rs-alerta" ? "alerta" : ""}">${big}<small>${sub}</small></div>
+    <ul class="rs-lista">${lista}</ul>
+    ${cls === "rs-alerta" ? `<p class="rs-nota" style="margin:0;font-size:13px;color:var(--bad)">Abaixo de 5,0 nos anos iniciais: está entre os municípios com acompanhamento prioritário do MEC.</p>` : cls === "rs-atencao" ? `<p style="margin:0;font-size:13px;color:var(--warn)">O Ideb caiu em pelo menos uma etapa desde ${IDEB_META.anos[ult - 1]}.</p>` : ""}
+    <span class="rs-link">Ver aprendizagem →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>${periodoIdeb()}</span></span>
+  </button>`;
+}
+function cardVazio(tit, ic, txt){ return `<div class="rs-card breve"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${tit}</h3></header><p>${txt}</p></div>`; }
+
+function linhaIdebCard(cod){
+  const e = S.ideb?.e?.[cod]; if (!e || !IDEB_META) return "";
+  const p = ["ai", "af", "em"].filter(et => val(e[et], "ideb", iUlt()) != null).map(et => `${{ai: "AI", af: "AF", em: "EM"}[et]} <b>${f1(val(e[et], "ideb", iUlt()))}</b>`);
+  return p.length ? `<span class="ideb">Ideb ${IDEB_META.ano}: ${p.join(" · ")}</span>` : "";
+}
+function caixaIdebFicha(cod){
+  const e = S.ideb?.e?.[cod]; if (!IDEB_META) return "";
+  const r = S.rows.find(x => x[C.codigo] === cod);
+  const avaliada = r && (r[C.mat_fund_ai] || r[C.mat_fund_af] || r[C.mat_medio]);
+  if (!avaliada && !e) return "";   // creche e pré-escola não fazem Saeb
+  const ult = iUlt(), ant = IDEB_META.anos[ult - 1];
+  const linhas = ["ai", "af", "em"].filter(et => temIdeb(e?.[et])).map(et => { const s = e[et];
+    return `<span>${ETAPA_NOME[et]} <small style="color:var(--muted)">(${ETAPA_SUB[et]})</small></span><span>${f1(val(s, "ideb", ult))} <small style="color:var(--muted);font-weight:400">· ${ant}: ${f1(val(s, "ideb", ult - 1))}</small></span>
+      <span style="color:var(--muted);padding-left:12px">Saeb ${IDEB_META.ano}: matemática / português</span><span>${f0(val(s, "mat", ult))} / ${f0(val(s, "port", ult))}</span>`; }).join("");
+  return `<div class="box"><h3>Aprendizagem (Ideb ${IDEB_META.ano}) <small>provas do Saeb no fim de ${IDEB_META.ano}</small></h3>${linhas ? `<div class="dl">${linhas}</div>`
+    : `<p class="src">Sem Ideb ${IDEB_META.ano} para esta escola. O INEP só calcula quando pelo menos 10 alunos fazem a prova do Saeb e a participação é suficiente.</p>`}</div>`;
+}
+
+function grafico(series, anos){
+  const W = 640, H = 250, ml = 34, mr = 46, mt = 14, mb = 28;
+  const todos = series.flatMap(s => s.v.filter(v => v != null));
+  if (!todos.length) return "";
+  let lo = Math.floor(Math.min(...todos) - .3), hi = Math.ceil(Math.max(...todos) + .3);
+  lo = Math.max(0, lo); hi = Math.min(10, Math.max(hi, lo + 2));
+  const x = i => ml + i * (W - ml - mr) / (anos.length - 1), y = v => mt + (hi - v) * (H - mt - mb) / (hi - lo);
+  let g = "";
+  for (let v = lo; v <= hi; v++) g += `<line class="grade" x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}"/><text x="${ml - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  anos.forEach((a, i) => { if (i % (anos.length > 8 ? 2 : 1) === 0 || i === anos.length - 1) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${a}</text>`; });
+  for (const s of series){
+    if (s.meta){ s.v.forEach((v, i) => { if (v != null) g += `<rect x="${x(i) - 4}" y="${y(v) - 4}" width="8" height="8" transform="rotate(45 ${x(i)} ${y(v)})" fill="var(--surface)" stroke="${s.cor}" stroke-width="2"><title>Meta ${anos[i]}: ${f1(v)}</title></rect>`; }); continue; }
+    let d = "", aberto = false;
+    s.v.forEach((v, i) => { if (v == null){ aberto = false; return; } d += (aberto ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); aberto = true; });
+    g += `<path d="${d}" fill="none" stroke="${s.cor}" stroke-width="${s.forte ? 3.2 : 2.2}" ${s.trac ? `stroke-dasharray="${s.trac}"` : ""} stroke-linejoin="round" stroke-linecap="round"/>`;
+    s.v.forEach((v, i) => { if (v != null) g += `<circle cx="${x(i)}" cy="${y(v)}" r="${s.forte ? 4.2 : 3}" fill="${s.cor}"><title>${esc(s.nome)} ${anos[i]}: ${f1(v)}</title></circle>`; });
+    const li = s.v.map((v, i) => v == null ? -1 : i).filter(i => i >= 0).pop();
+    if (li != null && s.rotulo) g += `<text class="rot-val" x="${x(li) + 8}" y="${y(s.v[li]) + 4 + (s.dy || 0)}" style="fill:${s.cor}">${f1(s.v[li])}</text>`;
+  }
+  return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução do Ideb de ${anos[0]} a ${anos[anos.length - 1]}">${g}</svg>
+    <div class="leg-g">${series.map(s => `<span><i class="${s.meta ? "meta" : s.trac ? (s.trac.startsWith("2") ? "pont" : "trac") : ""}" style="--c:${s.cor}"></i>${esc(s.nome)}</span>`).join("")}</div>`;
+}
+
+function seletoresIdeb(mun){
+  const et = S.etapa, rede = redeEscolhida(mun, et);
+  const tem = e => mun ? redesMun(mun, e).length : !!IDEB_BR?.uf?.[S.uf]?.[e];
+  const redes = mun ? redesMun(mun, et) : redesEstado(et);
+  return `<div class="seletores">
+    <div><span class="rot">Etapa</span><span class="escopo">${["ai", "af", "em"].map(e => `<button type="button" data-etapa="${e}" aria-pressed="${e === et}" ${tem(e) ? "" : "disabled"}>${ETAPA_NOME[e]}</button>`).join("")}</span></div>
+    <div><span class="rot">Rede</span><span class="escopo">${redes.map(r => `<button type="button" data-arede="${r}" aria-pressed="${r === rede}">${r}</button>`).join("")}</span></div>
+  </div>`;
+}
+
+function renderAprendizagem(){
+  const el = $("#aprendizagem");
+  const titulo = "Aprendizagem em " + esc(lugar());
+  if (!IDEB_META){ el.innerHTML = cabecalhoA(titulo, "Ideb e Saeb") + `<div class="aviso">${ICO.info}<div>Os dados do Ideb ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.ideb){ el.innerHTML = cabecalhoA(titulo, periodoIdeb()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do Ideb de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  if (!(["ai", "af", "em"].includes(S.etapa))) S.etapa = "ai";
+  if (S.mun && !redesMun(S.mun, S.etapa).length){ const outra = ["ai", "af", "em"].find(e => redesMun(S.mun, e).length); if (outra) S.etapa = outra; }
+  const ult = iUlt(), anos = IDEB_META.anos, et = S.etapa;
+  const acoes = `<button class="btn" id="a-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.mun){ el.innerHTML = cabecalhoA(titulo, periodoIdeb(), acoes) + seletoresIdeb(null) + estadoIdeb() + explicaIdeb() + `<p class="src">${fonteIdeb()}</p>`; return; }
+  const rede = redeEscolhida(S.mun, et);
+  if (!rede){ el.innerHTML = cabecalhoA(titulo, periodoIdeb()) + `<div class="aviso">${ICO.info}<div>${esc(lugar())} não tem Ideb divulgado. O INEP só calcula quando há alunos suficientes fazendo a prova do Saeb.</div></div>` + explicaIdeb(); return; }
+  const s = serieMun(S.mun, et, rede), uf = serieRef(S.uf, et, rede), br = serieRef("br", et, rede);
+  const v = val(s, "ideb", ult), aprov = val(s, "p", ult);
+  // posição no estado
+  const outros = Object.entries(S.ideb.m).map(([m, d]) => [+m, val(d[et]?.[rede], "ideb", ult)]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+  const pos = v == null ? null : outros.filter(x => x[1] > v).length + 1;
+  const faixas = [[0, 4.9, "var(--bad)"], [5, 5.9, "var(--warn)"], [6, 10, "var(--ok)"]].map(([a, b, cor]) => ({a, b, cor, n: outros.filter(x => x[1] >= a && x[1] <= b + .001).length}));
+  const series = [{nome: `${lugar()} (${rede.toLowerCase()})`, v: s[0], cor: "var(--accent)", forte: true, rotulo: true}];
+  if (uf) series.push({nome: `${siglaUF(S.uf)} (${uf.rede.toLowerCase()})`, v: uf.s[0], cor: "var(--r-est)", trac: "7 5", rotulo: true, dy: 12});
+  if (br) series.push({nome: `Brasil (${br.rede.toLowerCase()})`, v: br.s[0], cor: "var(--muted)", trac: "2 5", rotulo: true, dy: -10});
+  if (s[1] && s[1].some(x => x != null)) series.push({nome: "Meta do município (até 2021)", v: s[1], cor: "var(--lapis-ink)", meta: true});
+  el.innerHTML = cabecalhoA(titulo, periodoIdeb(), acoes) + seletoresIdeb(S.mun) + `
+    <div class="kpis">
+      <div class="kpi ${v != null && v < 5 && et === "ai" ? "alerta" : ""}"><div class="k">Ideb ${anos[ult]} · ${ETAPA_NOME[et].toLowerCase()}</div><div class="v">${f1(v)}</div>${variacao(s)}<div class="s">${esc(siglaUF(S.uf))}${uf && uf.rede !== rede ? " (" + uf.rede.toLowerCase() + ")" : ""}: ${f1(val(uf?.s, "ideb", ult))} · Brasil${br && br.rede !== rede ? " (" + br.rede.toLowerCase() + ")" : ""}: ${f1(val(br?.s, "ideb", ult))}</div></div>
+      <div class="kpi"><div class="k">Saeb · matemática</div><div class="v">${f0(val(s, "mat", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "mat", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "mat", ult - 1))}</div></div>
+      <div class="kpi"><div class="k">Saeb · português</div><div class="v">${f0(val(s, "port", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "port", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "port", ult - 1))}</div></div>
+      <div class="kpi"><div class="k">Aprovação (fluxo)</div><div class="v">${aprov == null ? "–" : f1(aprov * 100) + "%"}</div><div class="s">dos alunos de ${ETAPA_SUB[et]} aprovados</div></div>
+    </div>
+    <div class="grid2">
+      <div class="box" style="grid-column:1 / -1"><h3>Evolução do Ideb <small>${ETAPA_NOME[et].toLowerCase()} (${ETAPA_SUB[et]}), de ${anos[0]} a ${anos[ult]}</small></h3>${grafico(series, anos)}
+        ${IDEB_META.aviso_meta ? `<p class="src" style="margin-top:8px">${esc(IDEB_META.aviso_meta)}</p>` : ""}</div>
+      <div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>rede ${rede.toLowerCase()}, ${ETAPA_NOME[et].toLowerCase()}</small></h3>
+        ${pos ? `<div class="rank"><b>${pos}º</b><span>de ${fmt(outros.length)} municípios com Ideb ${anos[ult]}</span></div>` : `<p class="src">Sem Ideb ${anos[ult]} para comparar.</p>`}
+        <div class="faixas" aria-hidden="true">${faixas.map(f => `<div style="width:${(f.n * 100 / (outros.length || 1)).toFixed(1)}%;background:${f.cor}"></div>`).join("")}</div>
+        <div class="leg-g">${faixas.map(f => `<span><i style="--c:${f.cor};border-top-width:8px;width:12px"></i>${f.a === 0 ? "até 4,9" : f.b === 10 ? "6,0 ou mais" : "5,0 a 5,9"}: ${fmt(f.n)}</span>`).join("")}</div>
+        <p class="src" style="margin-top:10px">O MEC acompanha de perto os municípios com Ideb abaixo de 5,0 nos anos iniciais.</p></div>
+      ${explicaIdeb(true)}
+    </div>
+    ${tabelaEscolasIdeb()}
+    <p class="src">${fonteIdeb()}</p>`;
+}
+function cabecalhoA(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function fonteIdeb(){ return `Fonte: ${esc(IDEB_META.fonte)}. ${esc(IDEB_META.periodo)}. Dados atualizados em ${dataBR(IDEB_META.gerado_em)}. Notas do Saeb na escala do INEP (anos iniciais vão de 0 a 350; anos finais e médio, de 0 a 425).`; }
+function explicaIdeb(caixa){
+  const t = `<div class="explica"><p><b>O que é o Ideb?</b> Uma nota de 0 a 10 que junta duas coisas: quanto os alunos aprenderam (prova do Saeb de português e matemática) e quantos foram aprovados no ano.</p>
+    <p>Sai a cada 2 anos. Escola que aprova todo mundo mas ensina pouco, ou que ensina bem mas reprova muito, fica com Ideb baixo.</p>
+    <p><b>Referência:</b> 6,0 nos anos iniciais era a meta nacional para 2021, o nível de países desenvolvidos.</p></div>`;
+  return caixa ? `<div class="box"><h3>Entenda o Ideb</h3>${t}</div>` : `<div class="box"><h3>Entenda o Ideb</h3>${t}</div>`;
+}
+function linhasEscolasIdeb(){
+  const et = S.etapa, ult = iUlt();
+  return S.rows.filter(r => r[C.municipio] === S.mun && temIdeb(S.ideb?.e?.[r[C.codigo]]?.[et]))
+    .map(r => { const s = S.ideb.e[r[C.codigo]][et]; return {r, s, v: val(s, "ideb", ult), a: val(s, "ideb", ult - 1)}; })
+    .filter(x => x.v != null || x.a != null)
+    .sort((x, y) => (y.v ?? -1) - (x.v ?? -1) || (y.a ?? -1) - (x.a ?? -1));
+}
+function tabelaEscolasIdeb(){
+  const ult = iUlt(), anos = IDEB_META.anos, lin = linhasEscolasIdeb();
+  if (!lin.length) return `<div class="box"><h3>Ideb por escola</h3><p class="src">Nenhuma escola de ${esc(lugar())} com Ideb de ${ETAPA_NOME[S.etapa].toLowerCase()}.</p></div>`;
+  return `<div class="box"><h3>Ideb por escola <small>${ETAPA_NOME[S.etapa].toLowerCase()} · toque para abrir a ficha</small></h3><div class="tablewrap"><table>
+    <thead><tr><th>Escola</th><th>Rede</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th></tr></thead>
+    <tbody>${lin.map(x => `<tr class="click" data-esc="${x.r[C.codigo]}"><td>${esc(tituloEscola(x.r[C.nome]))}</td><td>${REDE[x.r[C.rede]]}</td><td class="n">${f1(x.a)}</td>
+      <td class="n ideb-n ${x.v != null && x.v < 5 && S.etapa === "ai" ? "ideb-baixo" : ""}">${f1(x.v)}${x.v != null && x.a != null ? (x.v > x.a ? " ▲" : x.v < x.a ? " ▼" : "") : ""}</td>
+      <td class="n">${f0(val(x.s, "mat", ult))}</td><td class="n">${f0(val(x.s, "port", ult))}</td></tr>`).join("")}</tbody></table></div>
+    <p class="src" style="margin-top:8px">Escolas sem Ideb não aparecem: o INEP só calcula quando há pelo menos 10 alunos na prova e participação suficiente.</p></div>`;
+}
+function estadoIdeb(){
+  const et = S.etapa, ult = iUlt(), anos = IDEB_META.anos, rede = redeEscolhida(null, et);
+  const uf = IDEB_BR?.uf?.[S.uf]?.[et] || {}, br = IDEB_BR?.uf?.br?.[et] || {};
+  const lin = Object.entries(S.ideb.m).map(([m, d]) => ({m: +m, s: d[et]?.[rede]})).filter(x => temIdeb(x.s))
+    .map(x => ({...x, v: val(x.s, "ideb", ult), a: val(x.s, "ideb", ult - 1)})).filter(x => x.v != null || x.a != null)
+    .sort((a, b) => (b.v ?? -1) - (a.v ?? -1) || (b.a ?? -1) - (a.a ?? -1));
+  const kp = ["Total", "Pública", "Estadual", "Municipal", "Privada"].filter(r => temIdeb(uf[r]));
+  return `<div class="kpis">${kp.slice(0, 4).map(r => `<div class="kpi"><div class="k">${esc(siglaUF(S.uf))} · ${r === "Total" ? "todas as redes" : "rede " + r.toLowerCase()}</div><div class="v">${f1(val(uf[r], "ideb", ult))}</div>${variacao(uf[r])}<div class="s">Brasil: ${f1(val(br[r], "ideb", ult))}</div></div>`).join("")}</div>
+    <div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>rede ${(rede || "").toLowerCase()}, ${ETAPA_NOME[et].toLowerCase()} · toque para abrir</small></h3>
+    <div class="tablewrap" style="max-height:520px;overflow:auto"><table><thead><tr><th class="n">#</th><th>Município</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th></tr></thead>
+    <tbody>${lin.map((x, i) => `<tr class="click" data-mun="${x.m}"><td class="n">${i + 1}</td><td>${esc(nomeMun(x.m))}</td><td class="n">${f1(x.a)}</td>
+      <td class="n ideb-n ${x.v != null && x.v < 5 && et === "ai" ? "ideb-baixo" : ""}">${f1(x.v)}</td><td class="n">${f0(val(x.s, "mat", ult))}</td><td class="n">${f0(val(x.s, "port", ult))}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+async function exportarCSVIdeb(){
+  if (!IDEB_META || !S.ideb) return toast("Sem dados do Ideb para exportar");
+  const anos = IDEB_META.anos, et = S.etapa, q = v => { const s = String(v ?? ""); return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const n = v => v == null ? "" : String(v).replace(".", ",");
+  let cab, linhas;
+  if (S.mun){
+    cab = ["Código INEP", "Escola", "Rede", ...anos.map(a => "Ideb " + a), "Saeb matemática " + anos.at(-1), "Saeb português " + anos.at(-1)];
+    linhas = linhasEscolasIdeb().map(x => [x.r[C.codigo], x.r[C.nome], REDE[x.r[C.rede]], ...x.s[0].map(n), n(val(x.s, "mat")), n(val(x.s, "port"))]);
+  } else {
+    const rede = redeEscolhida(null, et);
+    cab = ["Código IBGE", "Município", "Rede", ...anos.map(a => "Ideb " + a), "Saeb matemática " + anos.at(-1), "Saeb português " + anos.at(-1)];
+    linhas = Object.entries(S.ideb.m).filter(([, d]) => temIdeb(d[et]?.[rede])).map(([m, d]) => [m, nomeMun(+m), rede, ...d[et][rede][0].map(n), n(val(d[et][rede], "mat")), n(val(d[et][rede], "port"))]);
+  }
+  if (!linhas.length) return toast("Nada para exportar");
+  const csv = "﻿" + [cab.join(";"), ...linhas.map(l => l.map(q).join(";"))].join("\r\n");
+  await salvar(`educa-ja-ideb-${et}-${semAcento(lugar()).replace(/\W+/g, "-")}-${anos.at(-1)}.csv`, new Blob([csv], {type: "text/csv"}));
+}
+
 /* ===================== ficha da escola ===================== */
 let fichaAberta = null;
 function abrirFicha(cod, {semHistorico} = {}){
@@ -742,6 +1013,7 @@ function abrirFicha(cod, {semHistorico} = {}){
         ${nz(C.mat_medio, "Ensino médio")}${nz(C.mat_profissional, "Educação profissional")}${nz(C.mat_eja, "EJA (jovens e adultos)")}
         ${nz(C.mat_especial, "Educação especial (deficiência, autismo, altas habilidades)")}${nz(C.mat_integral, "Em tempo integral")}
         ${nz(C.mat_moram_zona_rural, "Moram na zona rural")}${nz(C.mat_transporte_publico, "Usam transporte escolar público")}</div>` : `<p class="src">Sem alunos matriculados ${ativa(r) ? "na data do Censo" : "(escola paralisada)"}.</p>`}</div>
+      ${caixaIdebFicha(cod)}
       <div class="box"><h3>Professores <small>(na data do Censo)</small></h3><div class="dl">
         ${n(C.docentes, "Professores")}${n(C.docentes_superior, "Com curso superior")}${n(C.docentes_licenciatura, "Com licenciatura")}
         ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}</div></div>
@@ -791,7 +1063,10 @@ function ligar(){
     const es = t.closest("[data-esc]"); if (es){ abrirFicha(+es.dataset.esc); return; }
     if (t.closest("#e-mais")){ S.f.lim += 60; renderLista(); return; }
     if (t.closest("#e-csv")){ exportarCSV(); return; }
-    const tm = t.closest("tr[data-mun]"); if (tm){ escolherMun(+tm.dataset.mun); $("#v-escolas").scrollTop = 0; return; }
+    if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
+    const be = t.closest("[data-etapa]"); if (be && !be.disabled){ S.etapa = be.dataset.etapa; S.rede = null; renderAprendizagem(); return; }
+    const br = t.closest("[data-arede]"); if (br && !br.disabled){ S.rede = br.dataset.arede; renderAprendizagem(); return; }
+    const tm = t.closest("tr[data-mun]"); if (tm){ escolherMun(+tm.dataset.mun); $("#v-" + S.view).scrollTop = 0; return; }
     if (t.closest("[data-fechar]") || t.classList.contains("ficha-fundo")){ fecharFicha(); return; }
     const cp = t.closest("[data-copiar]"); if (cp){ copiarLink(cp.dataset.copiar); return; }
   });
@@ -816,7 +1091,9 @@ function ligar(){
 async function iniciar(){
   ligar();
   try {
-    const [mj, meta] = await Promise.all([getJSON("data/municipios.json"), getJSON("data/escolas/meta.json")]);
+    const [mj, meta, im, ib] = await Promise.all([getJSON("data/municipios.json"), getJSON("data/escolas/meta.json"),
+      getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
+    IDEB_META = im; IDEB_BR = ib;
     META = meta; UFS = mj.ufs;
     C = Object.fromEntries(meta.campos.map((k, i) => [k, i]));
     MUN = mj.m.map(m => [m[0], m[1], m[2], Math.floor(m[0] / 100000), semAcento(m[1])]);
