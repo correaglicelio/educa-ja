@@ -82,6 +82,12 @@ def baixar(uf: str, ano: int, per: int) -> dict:
     return out
 
 
+def enviado(vals: list | None) -> list | None:
+    """O SIOPE devolve o 'mínimo do VAAT' (valor fixo do município) mesmo para quem ainda não enviou
+    o período. Só consideramos enviado quando há o % aplicado em educação (MDE)."""
+    return vals if vals and vals[COD_IDX["1.1"]] is not None else None
+
+
 def main() -> None:
     ufs = c.ufs_escolhidas()
     hoje = datetime.now(timezone.utc)
@@ -104,8 +110,10 @@ def main() -> None:
         entes = sorted({k for per in cache.values() for k in per})
         m = {}
         for ente in entes:
-            a = [cache.get(f"{ano}-6", {}).get(ente) for ano in fechados]
-            b = [cache.get(f"{atual}-{p}", {}).get(ente) for p in range(1, 7)]
+            a = [enviado(cache.get(f"{ano}-6", {}).get(ente)) for ano in fechados]
+            b = [enviado(cache.get(f"{atual}-{p}", {}).get(ente)) for p in range(1, 7)]
+            if not any(a) and not any(b):
+                continue
             m[ente] = {"a": a, "b": b}
         estado = m.pop("estado", None)
         # quantos municípios enviaram cada bimestre do ano atual (para saber qual é o "período corrente")

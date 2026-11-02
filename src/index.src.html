@@ -272,6 +272,30 @@ td.ideb-baixo{color:var(--bad); font-weight:700}
 .rs-periodo{font-size:12.5px; color:var(--muted); border-top:1px dashed var(--line); padding-top:8px; display:flex; gap:6px; align-items:flex-start}
 .rs-periodo svg{width:14px; height:14px; flex:none; margin-top:2px}
 .rs-big.alerta{color:var(--bad)} .rs-big.atencao{color:var(--warn)}
+/* gastos */
+.medidor{display:grid; gap:5px}
+.medidor .rot{display:flex; justify-content:space-between; gap:12px; font-size:14px; align-items:baseline}
+.medidor .rot b{font-family:var(--f-display); font-weight:800; font-size:22px; font-variant-numeric:tabular-nums}
+.barra{position:relative; height:12px; background:var(--sunk); border-radius:6px}
+.barra i{position:absolute; inset:0 auto 0 0; background:var(--ok); border-radius:6px; max-width:100%}
+.barra.ruim i{background:var(--bad)} .barra.parcial i{background:var(--accent)}
+.barra em{position:absolute; top:-4px; bottom:-4px; width:3px; border-radius:2px; background:var(--ink)}
+.barra u{position:absolute; top:-3px; bottom:-3px; width:3px; border-radius:2px; background:var(--r-est); text-decoration:none}
+.medidor small{font-size:12.5px; color:var(--muted)}
+.legenda-m{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--muted); margin:-4px 0 14px}
+.legenda-m span{display:inline-flex; align-items:center; gap:6px}
+.legenda-m i{width:3px; height:14px; border-radius:2px; background:var(--ink)} .legenda-m i.md{background:var(--r-est)}
+.medidores{display:grid; gap:18px}
+.selo-st{display:inline-flex; gap:6px; align-items:center; border-radius:999px; padding:3px 10px; font-weight:700; font-size:13px}
+.selo-st.ok{background:var(--ok-soft); color:var(--ok)} .selo-st.bad{background:var(--bad-soft); color:var(--bad)} .selo-st.warn{background:var(--warn-soft); color:var(--warn)}
+.envio{display:flex; gap:12px; align-items:flex-start; border-radius:var(--r); padding:12px 14px; font-size:14px; border:1px solid var(--line); background:var(--surface)}
+.envio.atrasado{background:var(--warn-soft); border-color:color-mix(in srgb, var(--warn) 40%, transparent)}
+.envio.grave{background:var(--bad-soft); border-color:color-mix(in srgb, var(--bad) 40%, transparent)}
+.envio svg{width:22px; height:22px; flex:none; margin-top:1px}
+.colunas{width:100%; height:auto; display:block}
+.colunas text{fill:var(--muted); font-family:var(--f-body); font-size:12px}
+.colunas .val{fill:var(--ink); font-weight:700; paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round}
+td.ruim{color:var(--bad); font-weight:700}
 .loading{position:absolute; inset:0; display:grid; place-items:center; background:color-mix(in srgb, var(--bg) 75%, transparent); z-index:900; font-weight:700; color:var(--muted)}
 .toast{position:fixed; left:50%; bottom:calc(88px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:3000; background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; font-weight:700; font-size:14px; box-shadow:var(--shadow); max-width:calc(100% - 32px)}
 .tip{cursor:help; text-decoration:underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset:3px}
@@ -339,11 +363,11 @@ td.ideb-baixo{color:var(--bad); font-weight:700}
       <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg><span>Painel</span></button>
       <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg><span>Escolas</span></button>
       <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg><span>Aprendizagem</span></button>
+      <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg><span>Gastos</span></button>
     </nav>
     <div>
       <p class="menu-tit">Em breve</p>
       <div class="views" aria-label="Seções em construção">
-        <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo escolar</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</span>
         <span class="breve"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>Dinheiro na escola</span>
@@ -368,12 +392,14 @@ td.ideb-baixo{color:var(--bad); font-weight:700}
     <div class="view" id="v-painel"><div class="inner" id="painel"></div></div>
     <div class="view" id="v-escolas" hidden><div class="inner" id="escolas"></div></div>
     <div class="view" id="v-aprendizagem" hidden><div class="inner" id="aprendizagem"></div></div>
+    <div class="view" id="v-gastos" hidden><div class="inner" id="gastos"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:3">
+  <nav class="tabbar" aria-label="Navegação" style="--n:4">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
-    <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprendizagem</button>
+    <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprender</button>
+    <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</button>
   </nav>
 </div>
 
@@ -391,7 +417,7 @@ const store = {
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
 const PADRAO = {uf: 51, mun: 5106752};
-const VIEWS = ["painel", "escolas", "aprendizagem"];
+const VIEWS = ["painel", "escolas", "aprendizagem", "gastos"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
@@ -429,9 +455,10 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let IDEB_META = null, IDEB_BR = null;
+let IDEB_META = null, IDEB_BR = null, G_META = null;
+const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -484,6 +511,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarGastos(uf){
+  if (!G_META || !G_META.ufs.includes(uf)) return null;
+  if (!GASTOS.has(uf)) GASTOS.set(uf, getJSON(`data/gastos/${uf}.json`).catch(e => { GASTOS.delete(uf); throw e; }));
+  return GASTOS.get(uf);
+}
 async function carregarIdeb(uf){
   if (!IDEB_META || !IDEB_META.ufs.includes(uf)) return null;
   if (!IDEB.has(uf)) IDEB.set(uf, getJSON(`data/ideb/${uf}.json`).catch(e => { IDEB.delete(uf); throw e; }));
@@ -501,7 +533,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null)]); nota(""); }
+  try { [S.rows, S.ideb, S.gastos] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null)]); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -555,7 +587,7 @@ function setView(v, {semHash} = {}){
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -581,8 +613,7 @@ function renderPainel(){
   const alertas = faltas.length
     ? faltas.map(f => `<li><span class="rs-pill bad">${fmt(f.lista.length)}</span>escola${f.lista.length > 1 ? "s" : ""} pública${f.lista.length > 1 ? "s" : ""} ${esc(f.nome)}</li>`).join("")
     : `<li><span class="rs-pill ok">OK</span>Todas as escolas públicas têm água potável, energia e banheiro</li>`;
-  const breve = [["d-gastos", "Gastos", "Quanto a prefeitura aplica em educação (mínimo de 25%) e o FUNDEB."],
-    ["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
+  const breve = [["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
     ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
@@ -597,6 +628,7 @@ function renderPainel(){
         <span class="rs-periodo">${ICO_CAL}<span>Censo Escolar ${META.ano} · situação na ${esc(META.data_referencia)}</span></span>
       </button>
       ${cardAprendizagem()}
+      ${cardGastos()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -977,6 +1009,189 @@ async function exportarCSVIdeb(){
   await salvar(`educa-ja-ideb-${et}-${semAcento(lugar()).replace(/\W+/g, "-")}-${anos.at(-1)}.csv`, new Blob([csv], {type: "text/csv"}));
 }
 
+
+/* ===================== gastos (SIOPE) ===================== */
+const GI = {};   // posição de cada indicador (vem do meta.json)
+const fPct = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + "%";
+const fR$ = v => v == null ? "–" : "R$ " + Math.round(v).toLocaleString("pt-BR");
+const fMi = v => v == null ? "–" : v >= 1e6 ? "R$ " + (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : fR$(v);
+const gv = (arr, k) => arr ? arr[GI[k]] ?? null : null;
+const mediana = a => { const b = a.filter(v => v != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+function bimRef(){
+  // bimestre "corrente": o último que pelo menos metade dos municípios do estado já enviou
+  const env = G_META?.envios?.[S.uf]?.bimestres || [];
+  const total = Object.keys(S.gastos?.m || {}).length || 1;
+  if (S.uf === 53){ const b = S.gastos?.estado?.b || []; return b.reduce((r, v, i) => v ? i + 1 : r, 0); }
+  let ref = 0; env.forEach((n, i) => { if (n >= total / 2) ref = i + 1; });
+  return ref;
+}
+const nomeBim = p => G_META.bimestres[p] || p + "º bimestre";
+const curtoBim = p => p === 6 ? "ano inteiro" : p + "º bimestre";
+const gMun = mun => S.gastos?.m?.[mun] || (S.uf === 53 && mun ? S.gastos?.estado : null);
+function ultBim(g){ let u = 0; (g?.b || []).forEach((v, i) => { if (v) u = i + 1; }); return u; }
+function situacaoEnvio(mun){
+  const g = gMun(mun), ref = bimRef(), anoP = G_META.anos.at(-1), u = ultBim(g);
+  const fechado = !!g?.a?.at(-1);
+  if (!fechado) return {cls: "grave", txt: `Não enviou ao SIOPE os dados do ano fechado de ${anoP}.`, nivel: 2};
+  if (ref && u < ref) return {cls: "atrasado", txt: u ? `Atrasado: último envio de ${G_META.atual} foi o ${curtoBim(u)}; a maioria do estado já enviou o ${curtoBim(ref)}.` : `Não enviou nenhum bimestre de ${G_META.atual}; a maioria do estado já enviou até o ${curtoBim(ref)}.`, nivel: 1};
+  return {cls: "", txt: `Em dia: enviou o ano fechado de ${anoP} e ${G_META.atual} até o ${curtoBim(u)}.`, nivel: 0};
+}
+function periodoGastos(){ const ref = bimRef(); return `SIOPE · ${G_META.anos.at(-1)} (ano fechado)${ref ? ` e ${G_META.atual} até o ${curtoBim(ref)}` : ""}`; }
+function medidor(rot, v, lim, opt = {}){
+  const max = opt.escala || 100, ruim = lim && v != null && ((lim.min != null && v < lim.min) || (lim.max != null && v > lim.max));
+  const marca = lim?.min ?? lim?.max;
+  return `<div class="medidor"><div class="rot"><span>${rot}</span><b>${fPct(v)}</b></div>
+    <div class="barra ${opt.parcial ? "parcial" : ruim ? "ruim" : ""}"><i style="width:${Math.min(100, (v || 0) * 100 / max).toFixed(1)}%"></i>
+      ${marca != null ? `<em style="left:calc(${(marca * 100 / max).toFixed(1)}% - 1.5px)" title="Limite legal: ${marca}%"></em>` : ""}
+      ${opt.ref != null ? `<u style="left:calc(${Math.min(100, opt.ref * 100 / max).toFixed(1)}% - 1.5px)" title="Mediana do estado: ${fPct(opt.ref)}"></u>` : ""}</div>
+    <small>${opt.nota || (lim?.min != null ? `Mínimo legal: ${lim.min}%` : lim?.max != null ? `Máximo legal: ${lim.max}%` : "")}${opt.ref != null ? ` · mediana dos municípios de ${esc(siglaUF(S.uf))}: ${fPct(opt.ref)}` : ""}</small></div>`;
+}
+function colunas(vals, anos, lim){
+  const W = innerWidth < 600 ? 340 : 560, H = 200, ml = 30, mr = 10, mt = 22, mb = 26;
+  const top = Math.max(35, ...vals.filter(v => v != null).map(v => Math.ceil(v / 5) * 5 + 2));
+  const bw = (W - ml - mr) / anos.length, y = v => mt + (top - v) * (H - mt - mb) / top;
+  let g = "";
+  for (let v = 0; v <= top; v += 10) g += `<line x1="${ml}" x2="${W - mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${ml - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  vals.forEach((v, i) => { const x = ml + i * bw + bw * .18, w = bw * .64;
+    if (v != null) g += `<rect x="${x}" y="${y(v)}" width="${w}" height="${y(0) - y(v)}" rx="4" fill="${v < lim ? "var(--bad)" : "var(--ok)"}"><title>${anos[i]}: ${fPct(v)}</title></rect><text class="val" x="${x + w / 2}" y="${y(v) - 6}" text-anchor="middle">${fPct(v)}</text>`;
+    else g += `<text x="${x + w / 2}" y="${y(0) - 6}" text-anchor="middle">não enviou</text>`;
+    g += `<text x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${anos[i]}</text>`; });
+  g += `<line x1="${ml}" x2="${W - mr}" y1="${y(lim)}" y2="${y(lim)}" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Percentual aplicado em educação por ano">${g}</svg>
+    <div class="legenda-m" style="margin:8px 0 0"><span><i style="width:16px;height:0;border-top:2px dashed var(--ink);background:none"></i>mínimo da lei (${lim}%)</span><span><i style="width:10px;height:10px;background:var(--bad)"></i>abaixo do mínimo</span></div>`;
+}
+function cardGastos(){
+  if (!G_META || !S.gastos) return "";
+  const anoP = G_META.anos.at(-1), ref = bimRef();
+  if (!S.mun){
+    const e = S.gastos.estado, muns = Object.values(S.gastos.m);
+    const abaixo = muns.filter(g => { const v = gv(g.a.at(-1), "mde"); return v != null && v < 25; }).length;
+    const semEnvio = Object.keys(S.gastos.m).length;
+    return `<button type="button" class="rs-card ${abaixo ? "rs-atencao" : ""}" data-ir="gastos">
+      <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg></span><h3>Gastos com educação</h3></header>
+      <div class="rs-big">${fPct(gv(e?.a?.at(-1), "mde"))}<small>governo de ${esc(nomeUF(S.uf))} em ${anoP} (mínimo 25%)</small></div>
+      <ul class="rs-lista"><li><span class="rs-pill ${abaixo ? "warn" : "ok"}">${fmt(abaixo)}</span>município${abaixo === 1 ? "" : "s"} abaixo de 25% em ${anoP}</li>
+        <li><span class="rs-pill">${fmt((G_META.envios?.[S.uf]?.bimestres || [])[ref - 1] || 0)}</span>de ${fmt(semEnvio)} já enviaram o ${curtoBim(ref)} de ${G_META.atual}</li></ul>
+      <span class="rs-link">Ver gastos →</span><span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
+  }
+  const g = gMun(S.mun), st = situacaoEnvio(S.mun);
+  const a = g?.a?.at(-1), mde = gv(a, "mde"), fr = gv(a, "fundeb_remun"), na = gv(a, "fundeb_nao_aplic");
+  const u = ultBim(g), parc = u ? gv(g.b[u - 1], "mde") : null;
+  const med = u ? mediana(Object.values(S.gastos.m).map(x => gv(x.b?.[u - 1], "mde"))) : null;
+  const descumpre = (mde != null && mde < 25) || (fr != null && fr < 70) || (na != null && na > 10);
+  const cls = descumpre || st.nivel === 2 ? "rs-alerta" : st.nivel === 1 ? "rs-atencao" : "";
+  return `<button type="button" class="rs-card ${cls}" data-ir="gastos">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg></span><h3>Gastos com educação</h3></header>
+    <div class="rs-big ${mde != null && mde < 25 ? "alerta" : ""}">${fPct(mde)}<small>dos impostos aplicados em educação em ${anoP} (mínimo 25%)</small></div>
+    <ul class="rs-lista">
+      <li><span class="rs-pill ${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</span>do FUNDEB na remuneração (mínimo 70%)</li>
+      <li><span class="rs-pill ${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</span>do FUNDEB sem aplicar (máximo 10%)</li>
+      ${u ? `<li><span class="rs-pill">${fPct(parc)}</span>${G_META.atual} até o ${curtoBim(u)} · mediana ${esc(siglaUF(S.uf))}: ${fPct(med)}</li>` : ""}
+    </ul>
+    ${st.nivel ? `<p style="margin:0;font-size:13px;color:var(--${st.nivel === 2 ? "bad" : "warn"})">${esc(st.txt)}</p>` : ""}
+    <span class="rs-link">Ver gastos →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
+}
+function cabecalhoG(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function fonteG(){ return `Fonte: ${esc(G_META.fonte)}. ${esc(G_META.aviso)} Dados atualizados em ${dataBR(G_META.gerado_em)}.`; }
+function renderGastos(){
+  const el = $("#gastos"), titulo = "Gastos com educação · " + esc(lugar());
+  if (!G_META){ el.innerHTML = cabecalhoG(titulo, "SIOPE") + `<div class="aviso">${ICO.info}<div>Os dados do SIOPE ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.gastos){ el.innerHTML = cabecalhoG(titulo, periodoGastos()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do SIOPE de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const acoes = `<button class="btn" id="g-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.mun){ el.innerHTML = cabecalhoG(titulo, periodoGastos(), acoes) + estadoGastos() + `<p class="src">${fonteG()}</p>`; return; }
+  const anos = G_META.anos, anoP = anos.at(-1), g = gMun(S.mun), st = situacaoEnvio(S.mun);
+  const a = g?.a?.at(-1), u = ultBim(g), b = u ? g.b[u - 1] : null;
+  const todos = Object.values(S.gastos.m);
+  const medA = k => mediana(todos.map(x => gv(x.a?.at(-1), k)));
+  const medB = k => u ? mediana(todos.map(x => gv(x.b?.[u - 1], k))) : null;
+  const lim = k => G_META.indicadores[GI[k]];
+  const vaat = gv(a, "vaat_capital") || gv(a, "vaat_infantil");
+  // posição no estado (MDE do ano fechado)
+  const lista = todos.map(x => gv(x.a?.at(-1), "mde")).filter(v => v != null).sort((x, y) => y - x);
+  const mde = gv(a, "mde"), pos = mde == null ? null : lista.filter(v => v > mde).length + 1;
+  const abaixo = lista.filter(v => v < 25).length;
+  const envIco = st.nivel ? ICO.info : ICO_CAL;
+  el.innerHTML = cabecalhoG(titulo, periodoGastos(), acoes) + `
+    <div class="envio ${st.cls}">${envIco}<div><b>Envio ao SIOPE:</b> ${esc(st.txt)}</div></div>
+    <div class="grid2">
+      <div class="box"><h3>Ano fechado de ${anoP} <small>${a ? "6º bimestre, declarado pela prefeitura" : "não enviado"}</small></h3>
+        ${a ? `<div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>mediana dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
+          ${medidor("Impostos aplicados em educação (MDE)", gv(a, "mde"), lim("mde"), {escala: 40, ref: medA("mde")})}
+          ${medidor("FUNDEB na remuneração dos profissionais", gv(a, "fundeb_remun"), lim("fundeb_remun"), {ref: medA("fundeb_remun")})}
+          ${medidor("FUNDEB que ficou sem aplicar", gv(a, "fundeb_nao_aplic"), lim("fundeb_nao_aplic"), {escala: 20, ref: medA("fundeb_nao_aplic")})}
+          ${vaat ? medidor("VAAT em obras e equipamentos (capital)", gv(a, "vaat_capital"), lim("vaat_capital"), {ref: mediana(todos.map(x => gv(x.a?.at(-1), "vaat_capital")).filter(v => v))}) : ""}
+          ${vaat ? medidor("VAAT na educação infantil", gv(a, "vaat_infantil"), null, {nota: `Mínimo exigido para este município: ${fPct(gv(a, "vaat_infantil_min"))}`}) : ""}
+        </div>` : `<p class="src">A prefeitura não enviou ao SIOPE a declaração do ano inteiro de ${anoP}.</p>`}
+      </div>
+      <div class="box"><h3>${G_META.atual}, ano em curso <small>${u ? "acumulado até o " + nomeBim(u).replace(/ \(.*/, "") + " " + nomeBim(u).replace(/^[^(]*/, "") : "nada enviado"}</small></h3>
+        ${b ? `<div class="aviso" style="margin-bottom:14px">${ICO.info}<div>Valores acumulados até o ${curtoBim(u)}. No meio do ano o percentual costuma ficar abaixo do mínimo: compare com a mediana do estado no mesmo bimestre.</div></div>
+        <div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>mediana dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
+          ${medidor("Impostos aplicados em educação (MDE)", gv(b, "mde"), lim("mde"), {escala: 40, parcial: true, ref: medB("mde"), nota: "Mínimo de 25% vale para o ano inteiro"})}
+          ${medidor("FUNDEB na remuneração", gv(b, "fundeb_remun"), lim("fundeb_remun"), {parcial: true, ref: medB("fundeb_remun"), nota: "Mínimo de 70% vale para o ano inteiro"})}
+        </div>` : `<p class="src">A prefeitura ainda não enviou nenhum bimestre de ${G_META.atual} ao SIOPE.</p>`}
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Investimento por aluno (ed. básica)</div><div class="v">${fR$(gv(a, "aluno_basica"))}</div><div class="s">em ${anoP} · mediana ${esc(siglaUF(S.uf))}: ${fR$(medA("aluno_basica"))}</div></div>
+      <div class="kpi"><div class="k">Aplicado em educação (MDE)</div><div class="v">${fMi(gv(a, "mde_aplicado"))}</div><div class="s">mínimo exigido: ${fMi(gv(a, "mde_exigido"))}</div></div>
+      <div class="kpi"><div class="k">Educação no orçamento</div><div class="v">${fPct(gv(a, "peso_educacao"))}</div><div class="s">de todas as despesas da prefeitura em ${anoP}</div></div>
+      <div class="kpi ${(gv(a, "fundeb_saldo") || 0) > 0 ? "" : ""}"><div class="k">Saldo do FUNDEB no fim de ${anoP}</div><div class="v">${fMi(gv(a, "fundeb_saldo"))}</div><div class="s">não usado do ano: ${fMi(gv(a, "fundeb_nao_usado"))}</div></div>
+    </div>
+    <div class="grid2">
+      <div class="box"><h3>Impostos aplicados em educação, ano a ano <small>(ano fechado)</small></h3>${colunas(anos.map((_, i) => gv(g?.a?.[i], "mde")), anos, 25)}</div>
+      <div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>% aplicado em ${anoP}</small></h3>
+        ${pos ? `<div class="rank"><b>${pos}º</b><span>de ${fmt(lista.length)} municípios que enviaram (do maior para o menor %)</span></div>` : `<p class="src">Sem dado de ${anoP} para comparar.</p>`}
+        <p style="margin:12px 0 0">${abaixo ? `<span class="selo-st bad">${fmt(abaixo)} abaixo de 25%</span>` : `<span class="selo-st ok">Todos acima de 25%</span>`} em ${esc(nomeUF(S.uf))} no ano de ${anoP}.</p>
+        <p class="src" style="margin-top:10px">Aplicar mais não quer dizer gastar melhor, e aplicar o mínimo não é ilegal. O que a lei exige é ficar acima de 25%.</p></div>
+    </div>
+    <p class="src">${fonteG()}</p>`;
+}
+function estadoGastos(){
+  const anoP = G_META.anos.at(-1), ref = bimRef(), e = S.gastos.estado;
+  const lin = Object.entries(S.gastos.m).map(([m, g]) => ({m: +m, a: g.a.at(-1), u: ultBim(g), b: g.b[ultBim(g) - 1]}));
+  // municípios que nunca aparecem no SIOPE também contam como "não enviou"
+  const ausentes = MUN.filter(m => m[3] === S.uf && !S.gastos.m[m[0]]).map(m => ({m: m[0], a: null, u: 0, b: null}));
+  const todos = [...lin, ...ausentes];
+  const ord = {nome: (x, y) => semAcento(nomeMun(x.m)).localeCompare(semAcento(nomeMun(y.m))),
+    mde: (x, y) => (gv(y.a, "mde") ?? -1) - (gv(x.a, "mde") ?? -1), envio: (x, y) => x.u - y.u}[S.gOrd] || (() => 0);
+  todos.sort(ord);
+  const abaixo = todos.filter(x => { const v = gv(x.a, "mde"); return v != null && v < 25; }).length;
+  const semFechado = todos.filter(x => !x.a).length, atras = todos.filter(x => ref && x.u < ref).length;
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">Governo de ${esc(nomeUF(S.uf))} · MDE ${anoP}</div><div class="v">${fPct(gv(e?.a?.at(-1), "mde"))}</div><div class="s">mínimo 25% · FUNDEB remuneração: ${fPct(gv(e?.a?.at(-1), "fundeb_remun"))}</div></div>
+      <div class="kpi ${abaixo ? "alerta" : ""}"><div class="k">Municípios abaixo de 25%</div><div class="v">${fmt(abaixo)}</div><div class="s">no ano fechado de ${anoP}</div></div>
+      <div class="kpi ${semFechado ? "alerta" : ""}"><div class="k">Sem o ano de ${anoP} no SIOPE</div><div class="v">${fmt(semFechado)}</div><div class="s">de ${fmt(todos.length)} municípios</div></div>
+      <div class="kpi ${atras ? "atencao" : ""}"><div class="k">Atrasados em ${G_META.atual}</div><div class="v">${fmt(atras)}</div><div class="s">ainda sem o ${curtoBim(ref)}</div></div>
+    </div>
+    <div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
+      <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>
+        ${[["nome", "Nome"], ["mde", "% em educação"], ["envio", "Atraso no envio"]].map(([k, t]) => `<button type="button" class="chip" data-gord="${k}" aria-pressed="${S.gOrd === k}"><i></i>${t}</button>`).join("")}</div>
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table>
+      <thead><tr><th>Município</th><th class="n">MDE ${anoP}</th><th class="n">FUNDEB remun. ${anoP}</th><th class="n">Por aluno ${anoP}</th><th class="n">Último envio ${G_META.atual}</th><th class="n">MDE ${G_META.atual} (até o último envio)</th></tr></thead>
+      <tbody>${todos.map(x => { const mde = gv(x.a, "mde"), fr = gv(x.a, "fundeb_remun");
+        return `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n ${mde != null && mde < 25 ? "ruim" : ""}">${x.a ? fPct(mde) : "não enviou"}</td>
+          <td class="n ${fr != null && fr < 70 ? "ruim" : ""}">${fPct(fr)}</td><td class="n">${fR$(gv(x.a, "aluno_basica"))}</td>
+          <td class="n" style="${ref && x.u < ref ? "color:var(--warn);font-weight:700" : ""}">${x.u ? x.u + "º bim." : "nenhum"}</td><td class="n">${fPct(gv(x.b, "mde"))}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+}
+async function exportarCSVGastos(){
+  if (!G_META || !S.gastos) return toast("Sem dados para exportar");
+  const ind = G_META.indicadores, n = v => v == null ? "" : String(v).replace(".", ",");
+  const q = v => { const s = String(v ?? ""); return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const periodos = [...G_META.anos.map(a => [a + " (ano fechado)", g => g?.a?.[G_META.anos.indexOf(a)]]),
+    ...[1, 2, 3, 4, 5, 6].map(p => [G_META.atual + " até o " + p + "º bimestre", g => g?.b?.[p - 1]])];
+  const entes = S.mun ? [[S.mun, nomeMun(S.mun)]] : Object.keys(S.gastos.m).map(m => [+m, nomeMun(+m)]);
+  const linhas = [];
+  for (const [m, nome] of entes) for (const [rot, f] of periodos){ const v = f(gMun(m)); if (v) linhas.push([m, nome, rot, ...ind.map((_, i) => n(v[i]))]); }
+  if (!linhas.length) return toast("Nada para exportar");
+  const cab = ["Código IBGE", "Município", "Período", ...ind.map(x => `${x.nome} (${x.unidade})`)];
+  const csv = "﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n");
+  await salvar(`educa-ja-gastos-${semAcento(lugar()).replace(/\W+/g, "-")}-${G_META.atual}.csv`, new Blob([csv], {type: "text/csv"}));
+}
+
 /* ===================== ficha da escola ===================== */
 let fichaAberta = null;
 function abrirFicha(cod, {semHistorico} = {}){
@@ -1067,6 +1282,8 @@ function ligar(){
     if (t.closest("#e-mais")){ S.f.lim += 60; renderLista(); return; }
     if (t.closest("#e-csv")){ exportarCSV(); return; }
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
+    if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
+    const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
     const be = t.closest("[data-etapa]"); if (be && !be.disabled){ S.etapa = be.dataset.etapa; S.rede = null; renderAprendizagem(); return; }
     const br = t.closest("[data-arede]"); if (br && !br.disabled){ S.rede = br.dataset.arede; renderAprendizagem(); return; }
     const tm = t.closest("tr[data-mun]"); if (tm){ escolherMun(+tm.dataset.mun); $("#v-" + S.view).scrollTop = 0; return; }
@@ -1099,6 +1316,8 @@ async function iniciar(){
     const [mj, meta, im, ib] = await Promise.all([getJSON("data/municipios.json"), getJSON("data/escolas/meta.json"),
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
+    G_META = await getJSON("data/gastos/meta.json").catch(() => null);
+    if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
     META = meta; UFS = mj.ufs;
     C = Object.fromEntries(meta.campos.map((k, i) => [k, i]));
     MUN = mj.m.map(m => [m[0], m[1], m[2], Math.floor(m[0] / 100000), semAcento(m[1])]);
