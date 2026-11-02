@@ -93,7 +93,7 @@ def serie(d: dict, anos: list[int]) -> list:
 
 
 def rede_limpa(txt: str) -> str:
-    return re.sub(r"\s*\(\d+\)\s*$", "", (txt or "").strip())
+    return re.sub(r"(\s*\(\d+\))+\s*$", "", (txt or "").strip())
 
 
 def main() -> None:
@@ -124,8 +124,10 @@ def main() -> None:
             for d in linhas_com_codigos(x):
                 cod = c.inteiro(d.get("ID_ESCOLA"))
                 if cod and cod // 1000000 in cod_ufs:
-                    escolas[cod][et] = serie(d, anos)
-                    n += 1
+                    sr = serie(d, anos)
+                    if sr[0]:   # só escolas com algum Ideb; guarda Ideb e notas (sem meta, N e P)
+                        escolas[cod][et] = [sr[0], [], sr[2], sr[3]]
+                        n += 1
             c.log(f"      {NOMES_ETAPA[et]}: {n:,} escolas")
             x.unlink()
 
@@ -139,7 +141,7 @@ def main() -> None:
                 if nome:
                     atual = UF_POR_NOME.get(c.sem_acento(nome).lower())   # regiões (Norte...) ficam None
                 rede = rede_limpa(d.get("_1"))
-                if atual and rede:
+                if atual and rede and len(rede) < 20:
                     estados[str(c.SIGLAS[atual])][et][rede] = serie(d, anos)
         x.unlink()
         x = baixar_xlsx(f"divulgacao_brasil_ideb_{ano}.zip", tmp)
@@ -149,8 +151,8 @@ def main() -> None:
             if aba is None:
                 aba = abas[list(ETAPAS).index(et)] if len(abas) >= 3 else abas[0]
             for d in linhas_com_codigos(x, aba):
-                rede = rede_limpa(d.get("_1") or d.get("_0"))
-                if rede and not rede.lower().startswith(("norte", "nordeste", "sudeste", "sul", "centro")):
+                rede = rede_limpa(d.get("rede") or d.get("REDE") or d.get("_1"))   # 1ª coluna: "Brasil"
+                if rede and len(rede) < 20:
                     estados["br"][et].setdefault(rede, serie(d, anos))
         x.unlink()
     finally:
