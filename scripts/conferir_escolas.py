@@ -21,11 +21,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comum as c  # noqa: E402
 
 URL = "https://download.inep.gov.br/dados_abertos/sinopses_estatisticas/sinopse_estatistica_censo_escolar_{ano}.zip"
-REDE_IDX = {1: 1, 2: 2, 3: 3, 4: 4}   # posição depois do total: Federal, Estadual, Municipal, Privada
 
 
 def totais_sinopse(xlsx: Path, aba_prefixo: str, ufs: set[str]) -> tuple[dict, list]:
-    """{cod_municipio: [total, fed, est, mun, priv]} da aba; devolve também as linhas de cabeçalho."""
+    """{cod_municipio: [total, ...]} da aba; devolve também as linhas de cabeçalho."""
     with __import__("zipfile").ZipFile(xlsx) as z:
         import xml.etree.ElementTree as ET
         livro = ET.fromstring(z.read("xl/workbook.xml"))
@@ -51,19 +50,19 @@ def main() -> None:
     if not meta:
         raise SystemExit("Rode antes: python scripts/coletar_escolas.py")
     ano, campos = meta["ano"], meta["campos"]
-    im, isit, ired = campos.index("mat_total"), campos.index("situacao"), campos.index("rede")
-    nossos_mat, nossos_esc = defaultdict(lambda: [0] * 5), defaultdict(lambda: [0] * 5)
+    im, isit = campos.index("mat_total"), campos.index("situacao")
+    nossos_mat, nossos_esc = defaultdict(int), defaultdict(int)
     for uf in ufs:
         dados = c.ler_json(c.DADOS_PUBLICOS / "escolas" / f"{c.SIGLAS[uf]}.json")
         if not dados:
             c.log(f"   sem dados de {uf}")
             continue
         for r in dados["e"]:
-            if r[isit] != 1:
+            # a Sinopse conta escolas em atividade COM matrícula na educação básica
+            if r[isit] != 1 or not r[im]:
                 continue
-            for k in (0, REDE_IDX[r[ired]]):
-                nossos_mat[r[2]][k] += r[im] or 0
-                nossos_esc[r[2]][k] += 1
+            nossos_mat[r[2]] += r[im]
+            nossos_esc[r[2]] += 1
 
     tmp = Path(tempfile.mkdtemp(prefix="sinopse_"))
     try:
@@ -77,22 +76,25 @@ def main() -> None:
         sin_esc, cab_esc = totais_sinopse(xlsx, "Educação Básica 3.1", ufs)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    c.log("   cabeçalho 1.1: " + " | ".join(" / ".join(x) for x in cab_mat[-3:]))
-    c.log("   cabeçalho 3.1: " + " | ".join(" / ".join(x) for x in cab_esc[-3:]))
 
     linhas = [f"### Conferência com a Sinopse {ano} ({', '.join(sorted(ufs))})", "",
-              "| Município | Matrículas (nós × Sinopse) | Escolas (nós × Sinopse) |", "|---|---|---|"]
+              "| Município | Matrículas (nós × Sinopse) | Escolas com matrícula (nós × Sinopse) |", "|---|---|---|"]
     difs = 0
     muns = {m[0]: m[1] for m in c.ler_json(c.DADOS_PUBLICOS / "municipios.json", {})["m"]}
     for cod in sorted(nossos_mat, key=lambda k: c.sem_acento(muns.get(k, ""))):
-        a, b = nossos_mat[cod], sin_mat.get(cod)
-        e1, e2 = nossos_esc[cod], sin_esc.get(cod)
+        # na Sinopse, a 1ª coluna depois do código é o total (as outras são por etapa)
+        a, b = nossos_mat[cod], (sin_mat.get(cod) or [None])[0]
+        e1, e2 = nossos_esc[cod], (sin_esc.get(cod) or [None])[0]
         igual = b is not None and e2 is not None and a == b and e1 == e2
         difs += not igual
         if not igual or cod == 5106752:
             linhas.append(f"| {muns.get(cod, cod)} | {a} × {b} | {e1} × {e2} |")
     tot = len(nossos_mat)
-    c.log(f"\n{tot - difs} de {tot} municípios batem exatamente com a Sinopse (total e por rede).")
+    soma = (sum(nossos_mat.values()), sum((sin_mat.get(k) or [0])[0] for k in nossos_mat),
+            sum(nossos_esc.values()), sum((sin_esc.get(k) or [0])[0] for k in nossos_mat))
+    c.log(f"Total: matrículas {soma[0]:,} × {soma[1]:,}; escolas {soma[2]:,} × {soma[3]:,}")
+    linhas.insert(1, f"Total: matrículas {soma[0]:,} × {soma[1]:,}; escolas {soma[2]:,} × {soma[3]:,}")
+    c.log(f"\n{tot - difs} de {tot} municípios batem exatamente com a Sinopse (matrículas e escolas).")
     for l in linhas[4:40]:
         c.log("   " + l)
     c.resumo_github(linhas[:4 + 60] + ["", f"**{tot - difs} de {tot} municípios batem exatamente.**"])
