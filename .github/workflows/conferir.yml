@@ -1,0 +1,22 @@
+# Educa Já: confere os dados coletados contra as tabelas oficiais (Sinopse do INEP).
+# Roda só quando você manda: aba Actions > "Conferir dados" > Run workflow.
+name: Conferir dados
+
+on:
+  workflow_dispatch:
+    inputs:
+      uf:
+        description: "Estados (MT, MT,GO ou todas)"
+        default: "MT"
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Escolas e matrículas contra a Sinopse Estatística
+        run: python scripts/conferir_escolas.py --uf "${{ inputs.uf }}"

@@ -14,7 +14,6 @@ Educa Já - funções comuns das coletas (só biblioteca padrão do Python).
 """
 from __future__ import annotations
 
-import codecs
 import csv
 import io
 import json
@@ -306,6 +305,32 @@ class ZipRemoto:
             return f.read()
 
 
+def censo_escolar() -> tuple[ZipRemoto, int]:
+    """O zip de microdados do Censo Escolar mais recente publicado (o INEP às vezes põe '_' no fim do nome)."""
+    ano_atual = datetime.now(timezone.utc).year
+    ultimo = None
+    for ano in range(ano_atual, ano_atual - 3, -1):
+        for nome in (f"microdados_censo_escolar_{ano}.zip", f"microdados_censo_escolar_{ano}_.zip"):
+            url = f"https://download.inep.gov.br/dados_abertos/{nome}"
+            try:
+                info(url)
+            except Exception as ex:  # noqa: BLE001  (404 = ainda não publicado)
+                ultimo = ex
+                continue
+            log(f"   Censo Escolar {ano}: {nome}")
+            return ZipRemoto(url), ano
+    raise RuntimeError(f"Nenhum Censo Escolar encontrado no INEP ({ultimo})")
+
+
+def tabela_censo(z: ZipRemoto, tabela: str) -> str:
+    """Nome do CSV de uma tabela do Censo ('escola', 'matricula', 'docente', 'turma').
+    De 2025 em diante vêm separadas; até 2024 era um arquivo só (microdados_ed_basica)."""
+    try:
+        return z.procurar(f"tabela_{tabela}", ".csv")
+    except KeyError:
+        return z.procurar("microdados_ed_basica", ".csv")
+
+
 def linhas_csv(fluxo_binario, sep: str = ";", encoding: str = "latin-1"):
     """Gera dicionários linha a linha de um CSV em fluxo (o INEP usa ponto e vírgula e latin-1)."""
     texto = io.TextIOWrapper(fluxo_binario, encoding=encoding, errors="replace", newline="")
@@ -369,6 +394,12 @@ def ler_xlsx(origem, aba: int | str = 0):
                     linha.append(val)
                 yield linha
                 el.clear()
+
+
+def inteiro(txt) -> int | None:
+    """'12' -> 12; '' ou inválido -> None (no Censo, vazio = não se aplica)."""
+    t = (txt or "").strip()
+    return int(t) if t.isdigit() else None
 
 
 def numero(txt) -> float | None:

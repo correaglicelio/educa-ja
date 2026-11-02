@@ -16,18 +16,12 @@ Uso: python scripts/coletar_municipios.py   (sempre o Brasil inteiro: a lista é
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comum as c  # noqa: E402
 
-CENSO_URLS = [
-    "https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2025_.zip",
-    "https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2025.zip",
-    "https://download.inep.gov.br/dados_abertos/microdados_censo_escolar_2024.zip",
-]
 SIOPE = ("https://www.fnde.gov.br/olinda-ide/servico/DADOS_ABERTOS_SIOPE/versao/v1/odata/"
          "Indicadores_Siope(Ano_Consulta=@Ano_Consulta,Num_Peri=@Num_Peri,Sig_UF=@Sig_UF)"
          "?@Ano_Consulta={ano}&@Num_Peri=6&@Sig_UF='{uf}'&$format=json&$select=COD_MUNI,NOM_MUNI&$top=100000")
@@ -35,31 +29,18 @@ SAIDA = c.DADOS_PUBLICOS / "municipios.json"
 
 
 def pelo_censo() -> tuple[dict, str]:
-    ultimo = None
-    for url in CENSO_URLS:
-        try:
-            c.log(f"   abrindo {url.rsplit('/', 1)[-1]} ...")
-            z = c.ZipRemoto(url)
-            try:
-                nome = z.procurar("tabela_escola", ".csv")        # 2025 em diante: tabelas separadas
-            except KeyError:
-                nome = z.procurar("microdados_ed_basica", ".csv")  # até 2024: um arquivo só
-            tam = z.arquivos[nome]["comp"]
-            c.log(f"   lendo {nome.rsplit('/', 1)[-1]} ({tam / 1e6:.0f} MB, em fluxo)")
-            muns: dict[int, tuple[str, str]] = {}
-            with z.abrir(nome) as f:
-                for i, linha in enumerate(c.linhas_csv(f), 1):
-                    cod = linha.get("CO_MUNICIPIO")
-                    if cod and cod.isdigit() and int(cod) not in muns:
-                        muns[int(cod)] = (linha["NO_MUNICIPIO"].strip(), linha["SG_UF"].strip())
-                    if i % 50000 == 0:
-                        c.log(f"   {i:,} escolas lidas, {len(muns):,} municípios")
-            ano = re.search(r"(20\d\d)", url.rsplit("/", 1)[-1]).group(1)
-            return muns, f"INEP, Censo Escolar {ano}"
-        except Exception as ex:  # noqa: BLE001
-            ultimo = ex
-            c.log(f"   não deu: {ex}")
-    raise RuntimeError(f"Censo indisponível: {ultimo}")
+    z, ano = c.censo_escolar()
+    nome = c.tabela_censo(z, "escola")
+    c.log(f"   lendo {nome.rsplit('/', 1)[-1]} ({z.arquivos[nome]['comp'] / 1e6:.0f} MB, em fluxo)")
+    muns: dict[int, tuple[str, str]] = {}
+    with z.abrir(nome) as f:
+        for i, linha in enumerate(c.linhas_csv(f), 1):
+            cod = linha.get("CO_MUNICIPIO")
+            if cod and cod.isdigit() and int(cod) not in muns:
+                muns[int(cod)] = (linha["NO_MUNICIPIO"].strip(), linha["SG_UF"].strip())
+            if i % 50000 == 0:
+                c.log(f"   {i:,} escolas lidas, {len(muns):,} municípios")
+    return muns, f"INEP, Censo Escolar {ano}"
 
 
 def pelo_siope() -> tuple[dict, str]:
@@ -85,7 +66,7 @@ def main() -> None:
     c.log("Educa Já - tabela de municípios")
     try:
         muns, fonte = pelo_censo()
-    except RuntimeError as ex:
+    except Exception as ex:  # noqa: BLE001
         c.log(f"   {ex}\n   usando o plano B (SIOPE)...")
         muns, fonte = pelo_siope()
     if len(muns) < 5000:
