@@ -27,6 +27,7 @@
 /* Layout: o mesmo do Saúde Já. Computador: menu lateral à esquerda, barra de local no topo, conteúdo rolando.
    Celular: faixa anil com a marca, barra de local, conteúdo e barra de navegação inferior. */
 :root{
+  --i-info:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.5a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM10.5 11h3v7h-3z'/%3E%3C/svg%3E");
   --bg:#F4F6FB; --surface:#FFFFFF; --sunk:#E9ECF5; --ink:#141A33; --muted:#565E80; --line:#DCE1EE; --sel:#ECEFF9;
   --accent:#23338C; --accent-ink:#FFFFFF; --accent-soft:#E6E9F7; --lapis:#F2B705; --lapis-ink:#7A5A00; --lapis-soft:#FDF3D2;
   --tile1:#3346B0; --tile2:#1C2A78; --faixa:#23338C;
@@ -237,6 +238,17 @@ tr.tot td{font-weight:700; border-bottom:0}
 .rs-ic .dico{width:24px; height:24px}
 .rs-big{font-family:var(--f-display); font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums}
 .rs-big small{display:block; font-family:var(--f-body); font-size:13.5px; font-weight:500; color:var(--muted); letter-spacing:0; margin-top:3px}
+/* balões de ajuda (como no Saúde Já) */
+.tip{cursor:help; text-decoration:underline dotted color-mix(in srgb, currentColor 55%, transparent); text-underline-offset:3px; text-decoration-thickness:1.5px; border-radius:3px}
+.tip::after{content:""; display:inline-block; width:.85em; height:.85em; margin-left:.28em; vertical-align:-.08em; opacity:.55;
+  background:currentColor; -webkit-mask:var(--i-info) center/contain no-repeat; mask:var(--i-info) center/contain no-repeat}
+.tip:hover::after,.tip:focus-visible::after{opacity:.9}
+.bubble{position:fixed; z-index:3000; max-width:min(320px, calc(100vw - 24px)); background:var(--ink); color:var(--bg); font-family:var(--f-body); font-size:13.5px; line-height:1.45; font-weight:400; letter-spacing:0; text-transform:none;
+  padding:10px 13px; border-radius:9px; box-shadow:var(--shadow); pointer-events:none; text-align:left}
+.bubble b{font-weight:700}
+.bubble::before{content:""; position:absolute; left:var(--ax, 50%); width:10px; height:10px; background:var(--ink); transform:translateX(-50%) rotate(45deg)}
+.bubble[data-pos="top"]::before{bottom:-5px}
+.bubble[data-pos="bottom"]::before{top:-5px}
 /* mini-tabela dos cards (opção A) */
 .rs-tab{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
 .rs-tab th br + span{font-size:11px}
@@ -652,6 +664,78 @@ function resumo(rows){
 function indicadores(pub){ return INDIC.map(([nome, f]) => { const n = pub.filter(f).length; return {nome, n, tot: pub.length, p: pub.length ? n * 100 / pub.length : null}; }); }
 function faltasBasicas(pub){ return BASICO.map(([nome, f]) => ({nome, lista: pub.filter(f)})).filter(x => x.lista.length); }
 
+
+/* ===================== balões de ajuda ===================== */
+const DICAS = {
+  mde: "<b>MDE</b> é Manutenção e Desenvolvimento do Ensino. A Constituição (art. 212) manda a prefeitura aplicar pelo menos <b>25%</b> da receita de impostos (IPTU, ISS, ITBI e a parte que recebe de ICMS, FPM, IPVA, ITR...) em educação: salários, escolas, transporte, material.",
+  mdevalor: "Valor em reais aplicado em educação (MDE) no ano, comparado com o mínimo exigido, que é 25% da receita de impostos.",
+  fundeb: "O <b>FUNDEB</b> é um fundo de cada estado. Prefeituras e governo do estado colocam nele 20% de vários impostos e transferências, e o dinheiro é redividido conforme o número de alunos de cada rede, com pesos por etapa. A União completa onde o valor por aluno é baixo.",
+  fundeb70: "Pela lei do FUNDEB (Lei 14.113/2020), pelo menos <b>70%</b> do que a rede recebe do fundo no ano tem de pagar os profissionais da educação básica em exercício: professores, diretores, coordenadores, orientadores.",
+  fundeb10: "A lei permite deixar no máximo <b>10%</b> do FUNDEB recebido no ano para usar até o fim de abril do ano seguinte. Acima disso, a prefeitura descumpre a lei.",
+  vaatcap: "<b>VAAT</b> (valor anual total por aluno) é a complementação da União ao FUNDEB para as redes com menos dinheiro por aluno. Pelo menos <b>15%</b> do VAAT recebido tem de ir para obras, reformas, equipamentos e veículos (despesas de capital). Só aparece para quem recebe VAAT.",
+  vaatinf: "Parte do <b>VAAT</b> (complementação da União para as redes com menos dinheiro por aluno) tem de ir para a <b>educação infantil</b>: creche e pré-escola. O mínimo é calculado pelo FNDE para cada município e aparece logo abaixo.",
+  poraluno: "Total aplicado na educação básica dividido pelo número de alunos da rede, segundo o SIOPE. Mostra quanto se gasta, não se o gasto é bom.",
+  orcamento: "Quanto as despesas com educação representam de todas as despesas da prefeitura no ano.",
+  saldofin: "Dinheiro do FUNDEB que ficou na conta no fim do ano. Uma parte pode ser usada até abril do ano seguinte; saldo alto todo ano merece atenção.",
+  colocou: "Parte dos impostos e transferências que vai direto para o FUNDEB: 20% do ICMS, FPM, IPVA, ITR e outros. É descontada automaticamente, antes de o dinheiro chegar ao caixa.",
+  recebeu: "O que volta do fundo estadual do FUNDEB, conforme o número de alunos da rede e os pesos de cada etapa (creche, tempo integral, zona rural etc. valem mais).",
+  complementacao: "Dinheiro extra da União ao FUNDEB: <b>VAAF</b> (estados com valor por aluno baixo), <b>VAAT</b> (redes com menos dinheiro por aluno) e <b>VAAR</b> (redes que melhoram atendimento e aprendizagem).",
+  saldo: "Recebido do FUNDEB mais a complementação da União, menos o que foi colocado no fundo. Positivo: a rede recebe mais do que contribui, o que é normal em quem tem muitos alunos para o que arrecada.",
+  matfundeb: "Matrículas da rede pública (e das creches e pré-escolas conveniadas) que o FNDE usa para dividir o FUNDEB. Vêm do Censo Escolar do ano anterior. Alunos do atendimento especializado (AEE) contam duas vezes.",
+  recporaluno: "Recebido do FUNDEB mais a complementação da União, dividido pelas matrículas da rede municipal consideradas no FUNDEB daquele ano.",
+  siope: "<b>SIOPE</b> é o sistema do FNDE onde estados e prefeituras declaram, a cada bimestre, quanto receberam e gastaram com educação. Os números são informados pela própria prefeitura. Quem não envia pode ficar sem transferências voluntárias.",
+  atraso: "Municípios que ainda não enviaram ao SIOPE o bimestre que a maioria do estado já enviou.",
+  mediana: "Valor do meio: metade dos municípios do estado fica acima e metade abaixo. Diferente da média, não é puxada por casos extremos.",
+  parcial: "Valores acumulados de janeiro até o último bimestre enviado. No meio do ano é comum ficar abaixo dos mínimos, que valem para o ano inteiro.",
+  anofechado: "Declaração do 6º bimestre, que cobre o ano inteiro. É ela que vale para conferir os mínimos da lei.",
+  ideb: "<b>Ideb</b> é o Índice de Desenvolvimento da Educação Básica, do INEP, de 0 a 10. Junta a nota da prova Saeb (português e matemática) com a taxa de aprovação. Sai a cada 2 anos.",
+  saeb: "<b>Saeb</b> é a prova de português e matemática do INEP, aplicada no 5º e no 9º ano do fundamental e no fim do ensino médio. Quanto maior a nota, melhor.",
+  aprovacao: "Percentual de alunos aprovados no ano, segundo o Censo Escolar. Entra no cálculo do Ideb: se muitos reprovam ou abandonam, o Ideb cai mesmo com nota boa.",
+  basico: "Escolas públicas em atividade sem pelo menos um destes itens: água potável, energia elétrica ou banheiro, segundo o Censo Escolar.",
+  atividade: "Escolas com situação \"em atividade\" no Censo Escolar. As paralisadas aparecem na lista, mas não entram nos totais.",
+  aee: "<b>AEE</b> é o Atendimento Educacional Especializado: apoio a alunos com deficiência, autismo ou altas habilidades, em geral numa sala de recursos, no contraturno.",
+  rede: "Quem mantém a escola: prefeitura (municipal), governo do estado (estadual), União (federal: institutos federais, colégios militares) ou particular (privada).",
+  internet: "Escola que declarou internet disponível para uso dos alunos, não só da secretaria.",
+  esgoto: "Escola ligada à rede pública de esgoto ou com fossa.",
+  acess: "Escola com pelo menos um recurso de acessibilidade: rampas, corrimão, piso tátil, sinalização, portas largas, banheiro adaptado etc.",
+};
+// termo com balão: T("mde", "Impostos aplicados em educação (MDE)")
+const T = (k, txt) => `<span class="tip" tabindex="0" data-tip="${k}">${txt}</span>`;
+const TIP_INDIC = {"Internet para os alunos": "internet", "Sala de atendimento especializado (AEE)": "aee", "Esgoto (rede ou fossa)": "esgoto", "Algum recurso de acessibilidade": "acess"};
+let balao = null, alvoTip = null, abertoEm = 0;
+function mostrarDica(el){
+  const txt = DICAS[el.dataset.tip]; if (!txt) return;
+  if (!balao){ balao = document.createElement("div"); balao.className = "bubble"; balao.setAttribute("role", "tooltip"); balao.id = "balao"; document.body.append(balao); }
+  if (alvoTip !== el) abertoEm = Date.now();
+  alvoTip = el; balao.innerHTML = txt; balao.hidden = false; el.setAttribute("aria-describedby", "balao");
+  const r = el.getBoundingClientRect(), b = balao.getBoundingClientRect(), m = 8;
+  const emCima = r.top - b.height - 10 > m;
+  let x = r.left + r.width / 2 - b.width / 2; x = Math.max(m, Math.min(x, innerWidth - b.width - m));
+  const y = emCima ? r.top - b.height - 10 : r.bottom + 10;
+  balao.style.left = x + "px"; balao.style.top = y + "px"; balao.dataset.pos = emCima ? "top" : "bottom";
+  balao.style.setProperty("--ax", Math.max(12, Math.min(b.width - 12, r.left + r.width / 2 - x)) + "px");
+}
+function esconderDica(){ if (balao) balao.hidden = true; if (alvoTip) alvoTip.removeAttribute("aria-describedby"); alvoTip = null; }
+function ligarDicas(){
+  const tocou = matchMedia("(hover: none)");
+  document.addEventListener("pointerover", e => { if (e.pointerType === "touch") return; const t = e.target.closest("[data-tip]"); if (t && t !== alvoTip) mostrarDica(t); });
+  document.addEventListener("pointerout", e => { if (e.pointerType === "touch") return; const t = e.target.closest("[data-tip]"); if (t && !t.contains(e.relatedTarget)) esconderDica(); });
+  document.addEventListener("focusin", e => { const t = e.target.closest?.("[data-tip]"); if (t) mostrarDica(t); });
+  document.addEventListener("focusout", e => { if (e.target.closest?.("[data-tip]")) esconderDica(); });
+  document.addEventListener("click", e => {
+    const t = e.target.closest("[data-tip]");
+    // no celular (ou dentro de um card do Painel), tocar no termo mostra a dica em vez de abrir a tela
+    if (t && (tocou.matches || e.pointerType === "touch" || e.detail === 0 || t.closest(".rs-card"))){
+      e.preventDefault(); e.stopPropagation();
+      if (alvoTip === t && Date.now() - abertoEm > 450) esconderDica(); else mostrarDica(t);
+      return;
+    }
+    if (!t) esconderDica();
+  }, true);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") esconderDica(); });
+  addEventListener("scroll", esconderDica, true); addEventListener("resize", esconderDica);
+}
+
 /* ===================== painel ===================== */
 // mini-tabela dos cards: cab = [[título, "n" p/ número]], linhas = [[html, ...]]
 function rsTab(cab, linhas){
@@ -671,8 +755,8 @@ function renderPainel(){
   const ip = internet.p == null ? "–" : Math.round(internet.p) + "%";
   const alertas = rsTab([["Escolas públicas"], ["", "n"]], [
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
-      : [["Água, energia e banheiro", `<b class="ok">todas ✓</b>`]]),
-    ["Internet para os alunos", `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
+      : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
+    [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
   const breve = [["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
     ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
@@ -723,10 +807,10 @@ function renderEscolas(){
   el.innerHTML = cabecalho("escolas", "Escolas de " + esc(lugar()), `Censo Escolar ${META.ano} · ${S.mun ? esc(nomeUF(S.uf)) : "estado todo"}`,
     `<button class="btn" id="e-csv" type="button">${ICO.csv}Baixar CSV</button>`) + `
     <div class="kpis">
-      <div class="kpi"><div class="k">Escolas em atividade</div><div class="v">${fmt(R.at.length)}</div><div class="s">${fmt(R.pub.length)} públicas · ${fmt(R.at.length - R.pub.length)} privadas</div></div>
+      <div class="kpi"><div class="k">${T("atividade", "Escolas em atividade")}</div><div class="v">${fmt(R.at.length)}</div><div class="s">${fmt(R.pub.length)} públicas · ${fmt(R.at.length - R.pub.length)} privadas</div></div>
       <div class="kpi"><div class="k">Matrículas</div><div class="v">${fmt(R.mat)}</div><div class="s">da creche ao ensino médio, EJA e profissional</div></div>
-      <div class="kpi ${faltas.length ? "alerta" : ""}"><div class="k">Públicas sem o básico</div><div class="v">${fmt(new Set(faltas.flatMap(f => f.lista.map(r => r[C.codigo]))).size)}</div><div class="s">sem água potável, energia ou banheiro</div></div>
-      <div class="kpi ${pubSemInternet && pubSemInternet * 2 > R.pub.length ? "atencao" : ""}"><div class="k">Públicas sem internet para alunos</div><div class="v">${fmt(pubSemInternet)}</div><div class="s">de ${fmt(R.pub.length)} escolas públicas</div></div>
+      <div class="kpi ${faltas.length ? "alerta" : ""}"><div class="k">${T("basico", "Públicas sem o básico")}</div><div class="v">${fmt(new Set(faltas.flatMap(f => f.lista.map(r => r[C.codigo]))).size)}</div><div class="s">sem água potável, energia ou banheiro</div></div>
+      <div class="kpi ${pubSemInternet && pubSemInternet * 2 > R.pub.length ? "atencao" : ""}"><div class="k">${T("internet", "Públicas sem internet para alunos")}</div><div class="v">${fmt(pubSemInternet)}</div><div class="s">de ${fmt(R.pub.length)} escolas públicas</div></div>
     </div>
     ${faltas.length ? `<div class="aviso">${ICO.info}<div><b>Escolas públicas sem o básico:</b> ${faltas.map(f => `${fmt(f.lista.length)} ${esc(f.nome)}`).join("; ")}. Elas aparecem com o aviso em vermelho na lista abaixo.</div></div>` : ""}
     <div class="grid2">
@@ -734,7 +818,7 @@ function renderEscolas(){
         <div class="stack" role="img" aria-label="Matrículas por rede">${totRede.map(k => `<div class="r${k}" style="width:${(R.porRede[k].mat * 100 / (R.mat || 1)).toFixed(2)}%" title="${REDE[k]}: ${fmt(R.porRede[k].mat)}"></div>`).join("")}</div>
         <div class="leg">${totRede.map(k => `<span class="r${k}"><i></i>${REDE[k]} ${pct(R.porRede[k].mat, R.mat)}%</span>`).join("")}</div>
         <div class="tablewrap" style="margin-top:12px"><table>
-          <thead><tr><th>Rede</th><th class="n">Escolas</th><th class="n">Matrículas</th><th class="n">Escolas na zona rural</th></tr></thead>
+          <thead><tr><th>${T("rede", "Rede")}</th><th class="n">Escolas</th><th class="n">Matrículas</th><th class="n">Escolas na zona rural</th></tr></thead>
           <tbody>${totRede.map(k => `<tr class="r${k}"><td><span class="dot"></span>${REDE[k]}</td><td class="n">${fmt(R.porRede[k].esc)}</td><td class="n">${fmt(R.porRede[k].mat)}</td><td class="n">${fmt(R.porRede[k].rural)}</td></tr>`).join("")}
           <tr class="tot"><td>Total</td><td class="n">${fmt(R.at.length)}</td><td class="n">${fmt(R.mat)}</td><td class="n">${fmt(R.at.filter(r => r[C.localizacao] === 2).length)}</td></tr></tbody></table></div>
         ${R.paral ? `<p class="src" style="margin-top:8px">Além dessas, ${fmt(R.paral)} escola${R.paral > 1 ? "s estão paralisadas" : " está paralisada"}.</p>` : ""}
@@ -742,7 +826,7 @@ function renderEscolas(){
       <div class="box"><h3>Estrutura das escolas públicas <small>(% das ${fmt(R.pub.length)} em atividade)</small></h3>
         ${S.mun ? `<p class="cmp-leg"><span><i></i>${esc(lugar())}</span><span><i class="ref"></i>Média de ${esc(siglaUF(S.uf))}</span></p>` : ""}
         <div class="cmp">${ind.map((x, i) => { const u = indUF[i]; const ruim = S.mun && x.p != null && u.p != null && x.p < u.p - 10;
-          return `<div class="cmp-item ${ruim ? "ruim" : ""}"><span class="nome">${esc(x.nome)}</span><span class="pct">${x.p == null ? "–" : Math.round(x.p) + "%"}</span>
+          return `<div class="cmp-item ${ruim ? "ruim" : ""}"><span class="nome">${TIP_INDIC[x.nome] ? T(TIP_INDIC[x.nome], esc(x.nome)) : esc(x.nome)}</span><span class="pct">${x.p == null ? "–" : Math.round(x.p) + "%"}</span>
             <span class="trk"><i style="width:${(x.p || 0).toFixed(1)}%"></i>${S.mun && u.p != null ? `<b style="left:calc(${u.p.toFixed(1)}% - 1.5px)" title="${esc(siglaUF(S.uf))}: ${Math.round(u.p)}%"></b>` : ""}</span>
             ${S.mun ? `<span class="sub">${fmt(x.n)} de ${fmt(x.tot)} escolas · ${esc(siglaUF(S.uf))}: ${u.p == null ? "–" : Math.round(u.p) + "%"}</span>` : `<span class="sub">${fmt(x.n)} de ${fmt(x.tot)} escolas</span>`}</div>`; }).join("")}</div>
       </div>
@@ -897,7 +981,7 @@ function cardAprendizagem(){
       ["ai", "af", "em"].map(et => [ETAPA_NOME[et], `<b>${f1(val(d[et]?.Total, "ideb", ult))}</b>`, f1(val(IDEB_BR.uf.br?.[et]?.Total, "ideb", ult))]));
   }
   return `<button type="button" class="rs-card ${cls}" data-ir="aprendizagem">
-    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span><h3>Aprendizagem (Ideb)</h3></header>
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span><h3>Aprendizagem (${T("ideb", "Ideb")})</h3></header>
     <div class="rs-big ${cls === "rs-alerta" ? "alerta" : ""}">${big}<small>${sub}</small></div>
     ${lista}
     ${cls === "rs-alerta" ? `<p class="rs-nota" style="margin:0;font-size:13px;color:var(--bad)">Abaixo de 5,0 nos anos iniciais: está entre os municípios com acompanhamento prioritário do MEC.</p>` : cls === "rs-atencao" ? `<p style="margin:0;font-size:13px;color:var(--warn)">O Ideb caiu em pelo menos uma etapa desde ${IDEB_META.anos[ult - 1]}.</p>` : ""}
@@ -993,10 +1077,10 @@ function renderAprendizagem(){
   if (s[1] && s[1].some(x => x != null)) series.push({nome: "Meta do município (até 2021)", v: s[1], cor: "var(--lapis-ink)", meta: true});
   el.innerHTML = cabecalhoA(titulo, periodoIdeb(), acoes) + seletoresIdeb(S.mun) + `
     <div class="kpis">
-      <div class="kpi ${v != null && v < 5 && et === "ai" ? "alerta" : ""}"><div class="k">Ideb ${anos[ult]} · ${ETAPA_NOME[et].toLowerCase()}</div><div class="v">${f1(v)}</div>${variacao(s)}<div class="s">${esc(siglaUF(S.uf))}${uf && uf.rede !== rede ? " (" + uf.rede.toLowerCase() + ")" : ""}: ${f1(val(uf?.s, "ideb", ult))} · Brasil${br && br.rede !== rede ? " (" + br.rede.toLowerCase() + ")" : ""}: ${f1(val(br?.s, "ideb", ult))}</div></div>
-      <div class="kpi"><div class="k">Saeb · matemática</div><div class="v">${f0(val(s, "mat", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "mat", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "mat", ult - 1))}</div></div>
-      <div class="kpi"><div class="k">Saeb · português</div><div class="v">${f0(val(s, "port", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "port", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "port", ult - 1))}</div></div>
-      <div class="kpi"><div class="k">Aprovação (fluxo)</div><div class="v">${aprov == null ? "–" : f1(aprov * 100) + "%"}</div><div class="s">dos alunos de ${ETAPA_SUB[et]} aprovados</div></div>
+      <div class="kpi ${v != null && v < 5 && et === "ai" ? "alerta" : ""}"><div class="k">${T("ideb", "Ideb")} ${anos[ult]} · ${ETAPA_NOME[et].toLowerCase()}</div><div class="v">${f1(v)}</div>${variacao(s)}<div class="s">${esc(siglaUF(S.uf))}${uf && uf.rede !== rede ? " (" + uf.rede.toLowerCase() + ")" : ""}: ${f1(val(uf?.s, "ideb", ult))} · Brasil${br && br.rede !== rede ? " (" + br.rede.toLowerCase() + ")" : ""}: ${f1(val(br?.s, "ideb", ult))}</div></div>
+      <div class="kpi"><div class="k">${T("saeb", "Saeb")} · matemática</div><div class="v">${f0(val(s, "mat", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "mat", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "mat", ult - 1))}</div></div>
+      <div class="kpi"><div class="k">${T("saeb", "Saeb")} · português</div><div class="v">${f0(val(s, "port", ult))}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(val(uf?.s, "port", ult))} · em ${anos[ult - 1]}: ${f0(val(s, "port", ult - 1))}</div></div>
+      <div class="kpi"><div class="k">${T("aprovacao", "Aprovação (fluxo)")}</div><div class="v">${aprov == null ? "–" : f1(aprov * 100) + "%"}</div><div class="s">dos alunos de ${ETAPA_SUB[et]} aprovados</div></div>
     </div>
     <div class="grid2">
       <div class="box" style="grid-column:1 / -1"><h3>Evolução do Ideb <small>${ETAPA_NOME[et].toLowerCase()} (${ETAPA_SUB[et]}), de ${anos[0]} a ${anos[ult]}</small></h3>${grafico(series, anos)}
@@ -1145,11 +1229,11 @@ function secaoFundeb(g, u){
   const tabM = fm ? rsTab([["Etapa"], ["Rede municipal", "n"], ["Rede estadual", "n"]],
       [...FM.etapas.map((et, i) => [et, fm[0][i], fm[1][i]]).filter(l => l[1] || l[2]).map(l => [l[0], l[1] ? `<b>${fmt(l[1])}</b>` : `<span class="fraco">–</span>`, l[2] ? fmt(l[2]) : `<span class="fraco">–</span>`]),
        ["<b>Total</b>", `<b>${fmt(Math.round(fm[0].reduce((x, y) => x + y, 0)))}</b>`, `<b>${fmt(Math.round(fm[1].reduce((x, y) => x + y, 0)))}</b>`]]) : "";
-  return `<div class="box"><h3>FUNDEB: quanto a prefeitura colocou e quanto recebeu</h3>
+  return `<div class="box"><h3>${T("fundeb", "FUNDEB")}: quanto a prefeitura colocou e quanto recebeu</h3>
     <p class="src" style="margin:-6px 0 12px">Parte dos impostos de todas as prefeituras e do estado vai para um fundo, que é dividido conforme o número de alunos de cada rede. ${ganhou == null ? "" : ganhou >= 0 ? `Em ${temA ? anoP : G_META.atual}, ${esc(nomeMun(S.mun))} <b class="ok" style="color:var(--ok)">recebeu mais do que colocou</b>.` : `Em ${temA ? anoP : G_META.atual}, ${esc(nomeMun(S.mun))} <b style="color:var(--bad)">colocou mais do que recebeu</b>.`}</p>
-    ${rsTab(cab, [lin("Colocou no FUNDEB", 0), lin("Recebeu do FUNDEB", 1), lin("Complementação da União", 2), lin("<b>Saldo</b>", 3)])}
-    ${porAluno ? `<p style="margin:12px 0 0;font-size:14px">Recebido por aluno da rede municipal em ${anoP}: <b>${fR$(porAluno)}</b> <span class="src">· mediana dos municípios de ${esc(siglaUF(S.uf))}: ${fR$(medAluno)}</span></p>` : ""}
-    ${fm ? `<h3 style="margin:18px 0 8px">Matrículas consideradas no FUNDEB ${FM.ano} <small>em ${esc(nomeMun(S.mun))}</small></h3>${tabM}
+    ${rsTab(cab, [lin(T("colocou", "Colocou no FUNDEB"), 0), lin(T("recebeu", "Recebeu do FUNDEB"), 1), lin(T("complementacao", "Complementação da União"), 2), lin(`<b>${T("saldo", "Saldo")}</b>`, 3)])}
+    ${porAluno ? `<p style="margin:12px 0 0;font-size:14px">${T("recporaluno", "Recebido por aluno")} da rede municipal em ${anoP}: <b>${fR$(porAluno)}</b> <span class="src">· mediana dos municípios de ${esc(siglaUF(S.uf))}: ${fR$(medAluno)}</span></p>` : ""}
+    ${fm ? `<h3 style="margin:18px 0 8px">${T("matfundeb", "Matrículas consideradas no FUNDEB")} ${FM.ano} <small>em ${esc(nomeMun(S.mun))}</small></h3>${tabM}
       <p class="src" style="margin-top:8px">${esc(FM.aviso)} Fonte: ${esc(FM.fonte)}.</p>` : ""}
   </div>`;
 }
@@ -1165,7 +1249,7 @@ function cardGastos(){
       ${ueb ? `<div class="rs-big">${fPct(gv(e.b[ueb - 1], "mde"))}<small>governo de ${esc(nomeUF(S.uf))} em ${G_META.atual}, até o ${curtoBim(ueb)} (parcial)</small></div>` : ""}
       ${rsTab([[`${G_META.atual} (em curso)`], ["", "n"]], [[`Municípios que enviaram o ${curtoBim(ref)}`, `<b>${fmt((G_META.envios?.[S.uf]?.bimestres || [])[ref - 1] || 0)}</b> de ${fmt(semEnvio)}`]])}
       ${rsTab([[`Ano fechado de ${anoP}`], ["Valor", "n"], ["Lei", "n"]], [
-        ["Governo do estado", `<b class="${gv(e?.a?.at(-1), "mde") < 25 ? "bad" : "ok"}">${fPct(gv(e?.a?.at(-1), "mde"))}</b>`, "mín. 25%"],
+        [T("mde", "Governo do estado"), `<b class="${gv(e?.a?.at(-1), "mde") < 25 ? "bad" : "ok"}">${fPct(gv(e?.a?.at(-1), "mde"))}</b>`, "mín. 25%"],
         ["Municípios abaixo de 25%", `<b class="${abaixo ? "warn" : "ok"}">${fmt(abaixo)}</b>`, "mín. 25%"]])}
       <span class="rs-link">Ver gastos →</span><span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
   }
@@ -1180,10 +1264,10 @@ function cardGastos(){
     ${u ? `<div class="rs-big">${fPct(parc)}<small>dos impostos aplicados em educação em ${G_META.atual}, até o ${curtoBim(u)} (parcial) · mediana ${esc(siglaUF(S.uf))} no mesmo bimestre: ${fPct(med)}</small></div>`
         : `<div class="rs-big atencao">–<small>nenhum bimestre de ${G_META.atual} enviado ao SIOPE</small></div>`}
     ${rsTab([[`Ano fechado de ${anoP}`], ["Valor", "n"], ["Lei", "n"]], [
-      ["Impostos em educação", `<b class="${mde == null ? "" : mde < 25 ? "bad" : "ok"}">${fPct(mde)}</b>`, "mín. 25%"],
-      ["FUNDEB na remuneração", `<b class="${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</b>`, "mín. 70%"],
-      ["FUNDEB sem aplicar", `<b class="${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</b>`, "máx. 10%"]])}
-    ${fundebSaldo(a) != null ? rsTab([["FUNDEB em " + anoP], ["Saldo", "n"]], [[fundebSaldo(a) >= 0 ? "Recebeu mais do que colocou" : "Colocou mais do que recebeu", `<b class="${fundebSaldo(a) >= 0 ? "ok" : "bad"}">${fMiS(fundebSaldo(a))}</b>`]]) : ""}
+      [T("mde", "Impostos em educação"), `<b class="${mde == null ? "" : mde < 25 ? "bad" : "ok"}">${fPct(mde)}</b>`, "mín. 25%"],
+      [T("fundeb70", "FUNDEB na remuneração"), `<b class="${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</b>`, "mín. 70%"],
+      [T("fundeb10", "FUNDEB sem aplicar"), `<b class="${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</b>`, "máx. 10%"]])}
+    ${fundebSaldo(a) != null ? rsTab([["FUNDEB em " + anoP], ["Saldo", "n"]], [[T("saldo", fundebSaldo(a) >= 0 ? "Recebeu mais do que colocou" : "Colocou mais do que recebeu"), `<b class="${fundebSaldo(a) >= 0 ? "ok" : "bad"}">${fMiS(fundebSaldo(a))}</b>`]]) : ""}
     ${st.nivel ? `<p style="margin:0;font-size:13px;color:var(--${st.nivel === 2 ? "bad" : "warn"})">${esc(st.txt)}</p>` : ""}
     <span class="rs-link">Ver gastos →</span>
     <span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
@@ -1212,31 +1296,31 @@ function renderGastos(){
   const abaixo = lista.filter(v => v < 25).length;
   const envIco = st.nivel ? ICO.info : ICO_CAL;
   el.innerHTML = cabecalhoG(titulo, periodoGastos(), acoes) + `
-    <div class="envio ${st.cls}">${envIco}<div><b>Envio ao SIOPE:</b> ${esc(st.txt)}</div></div>
+    <div class="envio ${st.cls}">${envIco}<div><b>Envio ao ${T("siope", "SIOPE")}:</b> ${esc(st.txt)}</div></div>
     <div class="empilha">
-      <div class="box"><h3>${G_META.atual}, ano em curso <small>${u ? "acumulado até o " + nomeBim(u).replace(/ \(.*/, "") + " " + nomeBim(u).replace(/^[^(]*/, "") : "nada enviado"}</small></h3>
+      <div class="box"><h3>${G_META.atual}, ${T("parcial", "ano em curso")} <small>${u ? "acumulado até o " + nomeBim(u).replace(/ \(.*/, "") + " " + nomeBim(u).replace(/^[^(]*/, "") : "nada enviado"}</small></h3>
         ${b ? `<div class="aviso" style="margin-bottom:14px">${ICO.info}<div>Valores acumulados até o ${curtoBim(u)}. No meio do ano o percentual costuma ficar abaixo do mínimo: compare com a mediana do estado no mesmo bimestre.</div></div>
-        <div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>mediana dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
-          ${medidor("Impostos aplicados em educação (MDE)", gv(b, "mde"), lim("mde"), {escala: 40, parcial: true, ref: medB("mde"), nota: "Mínimo de 25% vale para o ano inteiro"})}
-          ${medidor("FUNDEB na remuneração", gv(b, "fundeb_remun"), lim("fundeb_remun"), {parcial: true, ref: medB("fundeb_remun"), nota: "Mínimo de 70% vale para o ano inteiro"})}
+        <div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>${T("mediana", "mediana")} dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
+          ${medidor(T("mde", "Impostos aplicados em educação (MDE)"), gv(b, "mde"), lim("mde"), {escala: 40, parcial: true, ref: medB("mde"), nota: "Mínimo de 25% vale para o ano inteiro"})}
+          ${medidor(T("fundeb70", "FUNDEB na remuneração"), gv(b, "fundeb_remun"), lim("fundeb_remun"), {parcial: true, ref: medB("fundeb_remun"), nota: "Mínimo de 70% vale para o ano inteiro"})}
         </div>` : `<p class="src">A prefeitura ainda não enviou nenhum bimestre de ${G_META.atual} ao SIOPE.</p>`}
       </div>
-      <div class="box"><h3>Ano fechado de ${anoP} <small>${a ? "6º bimestre, declarado pela prefeitura" : "não enviado"}</small></h3>
-        ${a ? `<div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>mediana dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
-          ${medidor("Impostos aplicados em educação (MDE)", gv(a, "mde"), lim("mde"), {escala: 40, ref: medA("mde")})}
-          ${medidor("FUNDEB na remuneração dos profissionais", gv(a, "fundeb_remun"), lim("fundeb_remun"), {ref: medA("fundeb_remun")})}
-          ${medidor("FUNDEB que ficou sem aplicar", gv(a, "fundeb_nao_aplic"), lim("fundeb_nao_aplic"), {escala: 20, ref: medA("fundeb_nao_aplic")})}
-          ${vaat ? medidor("VAAT em obras e equipamentos (capital)", gv(a, "vaat_capital"), lim("vaat_capital"), {ref: mediana(todos.map(x => gv(x.a?.at(-1), "vaat_capital")).filter(v => v))}) : ""}
-          ${vaat ? medidor("VAAT na educação infantil", gv(a, "vaat_infantil"), null, {nota: `Mínimo exigido para este município: ${fPct(gv(a, "vaat_infantil_min"))}`}) : ""}
+      <div class="box"><h3>${T("anofechado", "Ano fechado")} de ${anoP} <small>${a ? "6º bimestre, declarado pela prefeitura" : "não enviado"}</small></h3>
+        ${a ? `<div class="legenda-m"><span><i></i>limite da lei</span><span><i class="md"></i>${T("mediana", "mediana")} dos municípios de ${esc(siglaUF(S.uf))}</span></div><div class="medidores">
+          ${medidor(T("mde", "Impostos aplicados em educação (MDE)"), gv(a, "mde"), lim("mde"), {escala: 40, ref: medA("mde")})}
+          ${medidor(T("fundeb70", "FUNDEB na remuneração dos profissionais"), gv(a, "fundeb_remun"), lim("fundeb_remun"), {ref: medA("fundeb_remun")})}
+          ${medidor(T("fundeb10", "FUNDEB que ficou sem aplicar"), gv(a, "fundeb_nao_aplic"), lim("fundeb_nao_aplic"), {escala: 20, ref: medA("fundeb_nao_aplic")})}
+          ${vaat ? medidor(T("vaatcap", "VAAT em obras e equipamentos (capital)"), gv(a, "vaat_capital"), lim("vaat_capital"), {ref: mediana(todos.map(x => gv(x.a?.at(-1), "vaat_capital")).filter(v => v))}) : ""}
+          ${vaat ? medidor(T("vaatinf", "VAAT na educação infantil"), gv(a, "vaat_infantil"), null, {nota: `Mínimo exigido para este município: ${fPct(gv(a, "vaat_infantil_min"))}`}) : ""}
         </div>` : `<p class="src">A prefeitura não enviou ao SIOPE a declaração do ano inteiro de ${anoP}.</p>`}
       </div>
     </div>
     ${secaoFundeb(g, u)}
     <div class="kpis">
-      <div class="kpi"><div class="k">Investimento por aluno (ed. básica)</div><div class="v">${fR$(gv(a, "aluno_basica"))}</div><div class="s">em ${anoP} · mediana ${esc(siglaUF(S.uf))}: ${fR$(medA("aluno_basica"))}</div></div>
-      <div class="kpi"><div class="k">Aplicado em educação (MDE)</div><div class="v">${fMi(gv(a, "mde_aplicado"))}</div><div class="s">mínimo exigido: ${fMi(gv(a, "mde_exigido"))}</div></div>
-      <div class="kpi"><div class="k">Educação no orçamento</div><div class="v">${fPct(gv(a, "peso_educacao"))}</div><div class="s">de todas as despesas da prefeitura em ${anoP}</div></div>
-      <div class="kpi ${(gv(a, "fundeb_saldo") || 0) > 0 ? "" : ""}"><div class="k">Saldo do FUNDEB no fim de ${anoP}</div><div class="v">${fMi(gv(a, "fundeb_saldo"))}</div><div class="s">não usado do ano: ${fMi(gv(a, "fundeb_nao_usado"))}</div></div>
+      <div class="kpi"><div class="k">${T("poraluno", "Investimento por aluno (ed. básica)")}</div><div class="v">${fR$(gv(a, "aluno_basica"))}</div><div class="s">em ${anoP} · mediana ${esc(siglaUF(S.uf))}: ${fR$(medA("aluno_basica"))}</div></div>
+      <div class="kpi"><div class="k">${T("mdevalor", "Aplicado em educação (MDE)")}</div><div class="v">${fMi(gv(a, "mde_aplicado"))}</div><div class="s">mínimo exigido: ${fMi(gv(a, "mde_exigido"))}</div></div>
+      <div class="kpi"><div class="k">${T("orcamento", "Educação no orçamento")}</div><div class="v">${fPct(gv(a, "peso_educacao"))}</div><div class="s">de todas as despesas da prefeitura em ${anoP}</div></div>
+      <div class="kpi ${(gv(a, "fundeb_saldo") || 0) > 0 ? "" : ""}"><div class="k">${T("saldofin", "Saldo do FUNDEB")} no fim de ${anoP}</div><div class="v">${fMi(gv(a, "fundeb_saldo"))}</div><div class="s">não usado do ano: ${fMi(gv(a, "fundeb_nao_usado"))}</div></div>
     </div>
     <div class="grid2">
       <div class="box"><h3>Impostos aplicados em educação, ano a ano <small>(ano fechado)</small></h3>${colunas(anos.map((_, i) => gv(g?.a?.[i], "mde")), anos, 25)}</div>
@@ -1260,15 +1344,15 @@ function estadoGastos(){
   const semFechado = todos.filter(x => !x.a).length, atras = todos.filter(x => ref && x.u < ref).length;
   return `<div class="kpis">
       <div class="kpi"><div class="k">Governo de ${esc(nomeUF(S.uf))} · ${G_META.atual} (parcial)</div><div class="v">${ueb ? fPct(gv(e.b[ueb - 1], "mde")) : "–"}</div><div class="s">${ueb ? `aplicado até o ${curtoBim(ueb)}` : "nada enviado"} · ano fechado de ${anoP}: ${fPct(gv(e?.a?.at(-1), "mde"))}</div></div>
-      <div class="kpi ${atras ? "atencao" : ""}"><div class="k">Atrasados em ${G_META.atual}</div><div class="v">${fmt(atras)}</div><div class="s">ainda sem o ${curtoBim(ref)}</div></div>
+      <div class="kpi ${atras ? "atencao" : ""}"><div class="k">${T("atraso", "Atrasados")} em ${G_META.atual}</div><div class="v">${fmt(atras)}</div><div class="s">ainda sem o ${curtoBim(ref)}</div></div>
       <div class="kpi ${abaixo ? "alerta" : ""}"><div class="k">Abaixo de 25% em ${anoP}</div><div class="v">${fmt(abaixo)}</div><div class="s">municípios, no ano fechado</div></div>
       <div class="kpi ${semFechado ? "alerta" : ""}"><div class="k">Sem o ano de ${anoP} no SIOPE</div><div class="v">${fmt(semFechado)}</div><div class="s">de ${fmt(todos.length)} municípios</div></div>
     </div>
     ${(() => { const ea = e?.a?.at(-1), sd = fundebSaldo(ea); if (sd == null) return "";
       const ganham = todos.filter(x => (fundebSaldo(x.a) ?? -1) >= 0).length, perdem = todos.filter(x => fundebSaldo(x.a) != null && fundebSaldo(x.a) < 0).length;
       return `<div class="box"><h3>FUNDEB em ${esc(nomeUF(S.uf))} <small>ano fechado de ${anoP}</small></h3>
-        ${rsTab([[""], ["Governo do estado", "n"]], [["Colocou no FUNDEB", fMi(gv(ea, "fundeb_contribuicao"))], ["Recebeu do FUNDEB", fMi(gv(ea, "fundeb_recebido"))],
-          ["Complementação da União", fMi(gv(ea, "fundeb_complementacao") || 0)], ["<b>Saldo</b>", `<b class="${sd >= 0 ? "ok" : "bad"}">${fMiS(sd)}</b>`]])}
+        ${rsTab([[""], ["Governo do estado", "n"]], [[T("colocou", "Colocou no FUNDEB"), fMi(gv(ea, "fundeb_contribuicao"))], [T("recebeu", "Recebeu do FUNDEB"), fMi(gv(ea, "fundeb_recebido"))],
+          [T("complementacao", "Complementação da União"), fMi(gv(ea, "fundeb_complementacao") || 0)], [`<b>${T("saldo", "Saldo")}</b>`, `<b class="${sd >= 0 ? "ok" : "bad"}">${fMiS(sd)}</b>`]])}
         <p style="margin:12px 0 0;font-size:14px"><b class="ok" style="color:var(--ok)">${fmt(ganham)}</b> municípios receberam mais do que colocaram e <b style="color:var(--bad)">${fmt(perdem)}</b> colocaram mais do que receberam.</p></div>`; })()}
     <div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
       <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>
@@ -1359,6 +1443,7 @@ function fecharFicha(semVoltar){
 
 /* ===================== eventos ===================== */
 function ligar(){
+  ligarDicas();
   document.querySelectorAll(".views [data-view], .tabbar [data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
   addEventListener("hashchange", () => { const h = location.hash.slice(1); if (/^escola-/.test(h) && fichaAberta) return; setView(h, {semHash: true}); });
   addEventListener("popstate", () => { if (fichaAberta && !history.state?.ficha) fecharFicha(true); });
