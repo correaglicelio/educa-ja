@@ -231,7 +231,8 @@ tr.tot td{font-weight:700; border-bottom:0}
 .rs-big small{display:block; font-family:var(--f-body); font-size:13.5px; font-weight:500; color:var(--muted); letter-spacing:0; margin-top:3px}
 /* mini-tabela dos cards (opção A) */
 .rs-tab{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
-.rs-tab th{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); text-align:left; padding:0 0 4px; border-bottom:1px solid var(--line); white-space:nowrap}
+.rs-tab th br + span{font-size:11px}
+.rs-tab th{vertical-align:bottom; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); text-align:left; padding:0 0 4px; border-bottom:1px solid var(--line); white-space:nowrap}
 .rs-tab td{padding:5px 0; border-bottom:1px solid var(--line); vertical-align:baseline}
 .rs-tab tr:last-child td{border-bottom:0}
 .rs-tab th + th, .rs-tab td + td{padding-left:10px}
@@ -1066,7 +1067,10 @@ async function exportarCSVIdeb(){
 const GI = {};   // posição de cada indicador (vem do meta.json)
 const fPct = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + "%";
 const fR$ = v => v == null ? "–" : "R$ " + Math.round(v).toLocaleString("pt-BR");
-const fMi = v => v == null ? "–" : v >= 1e6 ? "R$ " + (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : fR$(v);
+const fMi = v => v == null ? "–" : v >= 1e9 ? "R$ " + (v / 1e9).toLocaleString("pt-BR", {maximumFractionDigits: 2}) + " bi" : v >= 1e6 ? "R$ " + (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : fR$(v);
+const fMiS = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + fMi(Math.abs(v));
+function fundebSaldo(arr){ const r = gv(arr, "fundeb_recebido"), cpl = gv(arr, "fundeb_complementacao") || 0, ct = gv(arr, "fundeb_contribuicao");
+  return r == null || ct == null ? null : r + cpl - ct; }
 const gv = (arr, k) => arr ? arr[GI[k]] ?? null : null;
 const mediana = a => { const b = a.filter(v => v != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 function bimRef(){
@@ -1112,6 +1116,35 @@ function colunas(vals, anos, lim){
   return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Percentual aplicado em educação por ano">${g}</svg>
     <div class="legenda-m" style="margin:8px 0 0"><span><i style="width:16px;height:0;border-top:2px dashed var(--ink);background:none"></i>mínimo da lei (${lim}%)</span><span><i style="width:10px;height:10px;background:var(--bad)"></i>abaixo do mínimo</span></div>`;
 }
+
+function secaoFundeb(g, u){
+  if (GI.fundeb_recebido == null) return "";
+  const anoP = G_META.anos.at(-1), a = g?.a?.at(-1), b = u ? g.b[u - 1] : null;
+  const temB = b && gv(b, "fundeb_contribuicao") != null, temA = a && gv(a, "fundeb_contribuicao") != null;
+  if (!temA && !temB) return "";
+  const col = (arr, ok) => ok ? [fMi(gv(arr, "fundeb_contribuicao")), fMi(gv(arr, "fundeb_recebido")), fMi(gv(arr, "fundeb_complementacao") || 0), fundebSaldo(arr)] : ["–", "–", "–", null];
+  const cb = col(b, temB), ca = col(a, temA);
+  const sal = v => v == null ? "–" : `<b class="${v >= 0 ? "ok" : "bad"}">${fMiS(v)}</b>`;
+  const cab = [["", ""], ...(temB ? [[`${G_META.atual}<br><span style="text-transform:none;font-weight:500">até o ${curtoBim(u)}</span>`, "n"]] : []), [`${anoP}<br><span style="text-transform:none;font-weight:500">ano fechado</span>`, "n"]];
+  const lin = (rot, i) => [rot, ...(temB ? [i === 3 ? sal(cb[3]) : cb[i]] : []), i === 3 ? sal(ca[3]) : ca[i]];
+  // matrículas consideradas no FUNDEB
+  const FM = G_META.fundeb_matriculas, fm = S.gastos.fm?.[S.mun], fmAnt = S.gastos.fm_ant?.[S.mun];
+  const porAluno = temA && fmAnt?.[0] ? (gv(a, "fundeb_recebido") + (gv(a, "fundeb_complementacao") || 0)) / fmAnt[0] : null;
+  const todos = Object.entries(S.gastos.m).map(([m, x]) => { const f = S.gastos.fm_ant?.[m]; const aa = x.a?.at(-1);
+    return f?.[0] && gv(aa, "fundeb_recebido") != null ? (gv(aa, "fundeb_recebido") + (gv(aa, "fundeb_complementacao") || 0)) / f[0] : null; });
+  const medAluno = mediana(todos);
+  const ganhou = ca[3] ?? cb[3];
+  const tabM = fm ? rsTab([["Etapa"], ["Rede municipal", "n"], ["Rede estadual", "n"]],
+      [...FM.etapas.map((et, i) => [et, fm[0][i], fm[1][i]]).filter(l => l[1] || l[2]).map(l => [l[0], l[1] ? `<b>${fmt(l[1])}</b>` : `<span class="fraco">–</span>`, l[2] ? fmt(l[2]) : `<span class="fraco">–</span>`]),
+       ["<b>Total</b>", `<b>${fmt(Math.round(fm[0].reduce((x, y) => x + y, 0)))}</b>`, `<b>${fmt(Math.round(fm[1].reduce((x, y) => x + y, 0)))}</b>`]]) : "";
+  return `<div class="box"><h3>FUNDEB: quanto a prefeitura colocou e quanto recebeu</h3>
+    <p class="src" style="margin:-6px 0 12px">Parte dos impostos de todas as prefeituras e do estado vai para um fundo, que é dividido conforme o número de alunos de cada rede. ${ganhou == null ? "" : ganhou >= 0 ? `Em ${temA ? anoP : G_META.atual}, ${esc(nomeMun(S.mun))} <b class="ok" style="color:var(--ok)">recebeu mais do que colocou</b>.` : `Em ${temA ? anoP : G_META.atual}, ${esc(nomeMun(S.mun))} <b style="color:var(--bad)">colocou mais do que recebeu</b>.`}</p>
+    ${rsTab(cab, [lin("Colocou no FUNDEB", 0), lin("Recebeu do FUNDEB", 1), lin("Complementação da União", 2), lin("<b>Saldo</b>", 3)])}
+    ${porAluno ? `<p style="margin:12px 0 0;font-size:14px">Recebido por aluno da rede municipal em ${anoP}: <b>${fR$(porAluno)}</b> <span class="src">· mediana dos municípios de ${esc(siglaUF(S.uf))}: ${fR$(medAluno)}</span></p>` : ""}
+    ${fm ? `<h3 style="margin:18px 0 8px">Matrículas consideradas no FUNDEB ${FM.ano} <small>em ${esc(nomeMun(S.mun))}</small></h3>${tabM}
+      <p class="src" style="margin-top:8px">${esc(FM.aviso)} Fonte: ${esc(FM.fonte)}.</p>` : ""}
+  </div>`;
+}
 function cardGastos(){
   if (!G_META || !S.gastos) return "";
   const anoP = G_META.anos.at(-1), ref = bimRef();
@@ -1142,6 +1175,7 @@ function cardGastos(){
       ["Impostos em educação", `<b class="${mde == null ? "" : mde < 25 ? "bad" : "ok"}">${fPct(mde)}</b>`, "mín. 25%"],
       ["FUNDEB na remuneração", `<b class="${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</b>`, "mín. 70%"],
       ["FUNDEB sem aplicar", `<b class="${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</b>`, "máx. 10%"]])}
+    ${fundebSaldo(a) != null ? rsTab([["FUNDEB em " + anoP], ["Saldo", "n"]], [[fundebSaldo(a) >= 0 ? "Recebeu mais do que colocou" : "Colocou mais do que recebeu", `<b class="${fundebSaldo(a) >= 0 ? "ok" : "bad"}">${fMiS(fundebSaldo(a))}</b>`]]) : ""}
     ${st.nivel ? `<p style="margin:0;font-size:13px;color:var(--${st.nivel === 2 ? "bad" : "warn"})">${esc(st.txt)}</p>` : ""}
     <span class="rs-link">Ver gastos →</span>
     <span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
@@ -1189,6 +1223,7 @@ function renderGastos(){
         </div>` : `<p class="src">A prefeitura não enviou ao SIOPE a declaração do ano inteiro de ${anoP}.</p>`}
       </div>
     </div>
+    ${secaoFundeb(g, u)}
     <div class="kpis">
       <div class="kpi"><div class="k">Investimento por aluno (ed. básica)</div><div class="v">${fR$(gv(a, "aluno_basica"))}</div><div class="s">em ${anoP} · mediana ${esc(siglaUF(S.uf))}: ${fR$(medA("aluno_basica"))}</div></div>
       <div class="kpi"><div class="k">Aplicado em educação (MDE)</div><div class="v">${fMi(gv(a, "mde_aplicado"))}</div><div class="s">mínimo exigido: ${fMi(gv(a, "mde_exigido"))}</div></div>
@@ -1211,7 +1246,7 @@ function estadoGastos(){
   const ausentes = MUN.filter(m => m[3] === S.uf && !S.gastos.m[m[0]]).map(m => ({m: m[0], a: null, u: 0, b: null}));
   const todos = [...lin, ...ausentes];
   const ord = {nome: (x, y) => semAcento(nomeMun(x.m)).localeCompare(semAcento(nomeMun(y.m))),
-    mde: (x, y) => (gv(y.a, "mde") ?? -1) - (gv(x.a, "mde") ?? -1), envio: (x, y) => x.u - y.u}[S.gOrd] || (() => 0);
+    mde: (x, y) => (gv(y.a, "mde") ?? -1) - (gv(x.a, "mde") ?? -1), fundeb: (x, y) => (fundebSaldo(y.a) ?? -1e15) - (fundebSaldo(x.a) ?? -1e15), envio: (x, y) => x.u - y.u}[S.gOrd] || (() => 0);
   todos.sort(ord);
   const abaixo = todos.filter(x => { const v = gv(x.a, "mde"); return v != null && v < 25; }).length;
   const semFechado = todos.filter(x => !x.a).length, atras = todos.filter(x => ref && x.u < ref).length;
@@ -1221,16 +1256,22 @@ function estadoGastos(){
       <div class="kpi ${abaixo ? "alerta" : ""}"><div class="k">Abaixo de 25% em ${anoP}</div><div class="v">${fmt(abaixo)}</div><div class="s">municípios, no ano fechado</div></div>
       <div class="kpi ${semFechado ? "alerta" : ""}"><div class="k">Sem o ano de ${anoP} no SIOPE</div><div class="v">${fmt(semFechado)}</div><div class="s">de ${fmt(todos.length)} municípios</div></div>
     </div>
+    ${(() => { const ea = e?.a?.at(-1), sd = fundebSaldo(ea); if (sd == null) return "";
+      const ganham = todos.filter(x => (fundebSaldo(x.a) ?? -1) >= 0).length, perdem = todos.filter(x => fundebSaldo(x.a) != null && fundebSaldo(x.a) < 0).length;
+      return `<div class="box"><h3>FUNDEB em ${esc(nomeUF(S.uf))} <small>ano fechado de ${anoP}</small></h3>
+        ${rsTab([[""], ["Governo do estado", "n"]], [["Colocou no FUNDEB", fMi(gv(ea, "fundeb_contribuicao"))], ["Recebeu do FUNDEB", fMi(gv(ea, "fundeb_recebido"))],
+          ["Complementação da União", fMi(gv(ea, "fundeb_complementacao") || 0)], ["<b>Saldo</b>", `<b class="${sd >= 0 ? "ok" : "bad"}">${fMiS(sd)}</b>`]])}
+        <p style="margin:12px 0 0;font-size:14px"><b class="ok" style="color:var(--ok)">${fmt(ganham)}</b> municípios receberam mais do que colocaram e <b style="color:var(--bad)">${fmt(perdem)}</b> colocaram mais do que receberam.</p></div>`; })()}
     <div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
       <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>
-        ${[["nome", "Nome"], ["envio", "Atraso no envio"], ["mde", "% em educação " + anoP]].map(([k, t]) => `<button type="button" class="chip" data-gord="${k}" aria-pressed="${S.gOrd === k}"><i></i>${t}</button>`).join("")}</div>
+        ${[["nome", "Nome"], ["envio", "Atraso no envio"], ["mde", "% em educação " + anoP], ["fundeb", "Saldo FUNDEB " + anoP]].map(([k, t]) => `<button type="button" class="chip" data-gord="${k}" aria-pressed="${S.gOrd === k}"><i></i>${t}</button>`).join("")}</div>
       <div class="tablewrap" style="max-height:540px;overflow:auto"><table>
-      <thead><tr><th>Município</th><th class="n">Último envio ${G_META.atual}</th><th class="n">MDE ${G_META.atual} (até o último envio)</th><th class="n">MDE ${anoP}</th><th class="n">FUNDEB remun. ${anoP}</th><th class="n">Por aluno ${anoP}</th></tr></thead>
+      <thead><tr><th>Município</th><th class="n">Último envio ${G_META.atual}</th><th class="n">MDE ${G_META.atual} (até o último envio)</th><th class="n">MDE ${anoP}</th><th class="n">FUNDEB remun. ${anoP}</th><th class="n">Por aluno ${anoP}</th><th class="n">Saldo FUNDEB ${anoP}</th></tr></thead>
       <tbody>${todos.map(x => { const mde = gv(x.a, "mde"), fr = gv(x.a, "fundeb_remun");
         return `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td>
           <td class="n" style="${ref && x.u < ref ? "color:var(--warn);font-weight:700" : ""}">${x.u ? x.u + "º bim." : "nenhum"}</td><td class="n">${fPct(gv(x.b, "mde"))}</td>
           <td class="n ${mde != null && mde < 25 ? "ruim" : ""}">${x.a ? fPct(mde) : "não enviou"}</td>
-          <td class="n ${fr != null && fr < 70 ? "ruim" : ""}">${fPct(fr)}</td><td class="n">${fR$(gv(x.a, "aluno_basica"))}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+          <td class="n ${fr != null && fr < 70 ? "ruim" : ""}">${fPct(fr)}</td><td class="n">${fR$(gv(x.a, "aluno_basica"))}</td><td class="n" style="color:var(--${fundebSaldo(x.a) == null ? "muted" : fundebSaldo(x.a) >= 0 ? "ok" : "bad"})">${fMiS(fundebSaldo(x.a))}</td></tr>`; }).join("")}</tbody></table></div></div>`;
 }
 async function exportarCSVGastos(){
   if (!G_META || !S.gastos) return toast("Sem dados para exportar");

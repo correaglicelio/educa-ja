@@ -72,6 +72,11 @@ INDICADORES = [
 CODS_RECEITA = {("17510000", "Receitas Realizadas"): "R1", ("17580100", "Receitas Realizadas"): "R1",
                 ("17150000", "Receitas Realizadas"): "R2", ("17180900", "Receitas Realizadas"): "R2",
                 ("10000000", "Deduções FUNDEB"): "R3"}
+# municípios que mudaram de nome e ainda aparecem com o nome antigo no FNDE
+ANTIGOS = {"EMBU|SP": "Embu das Artes", "AUGUSTO SEVERO|RN": "Campo Grande", "FORTALEZA DO TABOCAO|TO": "Tabocão",
+           "PRESIDENTE JUSCELINO|RN": "Serra Caiada", "SAO VALERIO DA NATIVIDADE|TO": "São Valério",
+           "SANTAREM|PB": "Joca Claudino", "SERIDO|PB": "São Vicente do Seridó", "PARATI|RJ": "Paraty",
+           "ELDORADO DOS CARAJAS|PA": "Eldorado do Carajás", "POXOREO|MT": "Poxoréu", "SAO DOMINGOS DE POMBAL|PB": "São Domingos"}
 # etapas das matrículas do FUNDEB (ordem do JSON)
 ETAPAS_FM = ["Creche", "Pré-escola", "Fundamental, anos iniciais", "Fundamental, anos finais", "Fundamental, outras turmas",
              "Ensino médio", "Educação profissional", "EJA", "Educação especial", "Atendimento especializado (AEE)"]
@@ -136,6 +141,16 @@ def matriculas_fundeb(ufs: list[str]) -> tuple[int | None, dict, dict]:
         return "".join(palavras).replace("DOESTE", "OESTE") + "|" + uf
     por_nome = {c.chave_nome(n, uf): cod for cod, n, uf in mun.get("m", [])}
     por_solto = {solto(n, uf): cod for cod, n, uf in mun.get("m", [])}
+    import difflib
+    cache_ap: dict = {}
+
+    def aproximado(chave: str):
+        """Grafias antigas (BRODOWSKY, FLORINIA, DALCANTARA): o nome mais parecido da mesma UF, se for bem parecido."""
+        if chave not in cache_ap:
+            uf = chave.split("|")[1]
+            achou = difflib.get_close_matches(chave, [k for k in por_solto if k.endswith("|" + uf)], n=1, cutoff=0.88)
+            cache_ap[chave] = por_solto[achou[0]] if achou else None
+        return cache_ap[chave]
     soma: dict = {}
     falta = set()
     with c.abrir(MATRICULAS, timeout=180) as resp:
@@ -150,7 +165,8 @@ def matriculas_fundeb(ufs: list[str]) -> tuple[int | None, dict, dict]:
                 continue
             ano = c.inteiro(col[cab["nu_ano_censo"]])
             uf = col[cab["sg_uf"]]
-            cod = por_nome.get(c.chave_nome(col[cab["no_municipio_ge"]], uf)) or por_solto.get(solto(col[cab["no_municipio_ge"]], uf))
+            nome = ANTIGOS.get(c.chave_nome(col[cab["no_municipio_ge"]], uf), col[cab["no_municipio_ge"]])
+            cod = por_nome.get(c.chave_nome(nome, uf)) or por_solto.get(solto(nome, uf)) or aproximado(solto(nome, uf))
             if not cod:
                 falta.add(f"{col[cab['no_municipio_ge']]}/{uf}")
                 continue
@@ -160,7 +176,7 @@ def matriculas_fundeb(ufs: list[str]) -> tuple[int | None, dict, dict]:
             d = soma.setdefault(ano, {}).setdefault(str(cod), [[0.0] * len(ETAPAS_FM), [0.0] * len(ETAPAS_FM)])
             d[rede][et] += q
     if falta:
-        c.log(f"   matrículas FUNDEB: {len(falta)} municípios sem correspondência pelo nome: {sorted(falta)[:8]}")
+        c.log(f"   matrículas FUNDEB: {len(falta)} municípios sem correspondência pelo nome: {sorted(falta)[:40]}")
     if not soma:
         return None, {}, {}
     ano = max(soma)
