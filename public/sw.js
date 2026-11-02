@@ -1,8 +1,8 @@
 // Educa Já — service worker: o app abre sem internet com os últimos dados vistos.
 // Rede primeiro (com cache: "no-cache" para conferir versão nova a cada abertura); cache se offline.
-const VERSAO = "educaja-v1";
+const VERSAO = "educaja-v2";
 const BASE = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
-  "data/municipios.json"];
+  "data/municipios.json", "data/escolas/meta.json"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSAO).then(c => c.addAll(BASE).catch(() => {})).then(() => self.skipWaiting()));
