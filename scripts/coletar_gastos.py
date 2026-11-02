@@ -129,7 +129,13 @@ def matriculas_fundeb(ufs: list[str]) -> tuple[int | None, dict, dict]:
     """Matrículas consideradas no FUNDEB (FNDE). Devolve (ano, {ibge: [[rede municipal], [rede estadual]]}, totais do ano anterior)."""
     import gzip, io
     mun = c.ler_json(c.DADOS_PUBLICOS / "municipios.json", {}) or {}
+    def solto(nome: str, uf: str) -> str:
+        # nomes do FNDE às vezes vêm sem apóstrofo ("DOESTE") ou com "DO" no lugar de "DE": compara só as letras,
+        # sem as palavras de ligação
+        palavras = [w for w in c.chave_nome(nome).split() if w not in ("D", "DE", "DA", "DO", "DAS", "DOS")]
+        return "".join(palavras).replace("DOESTE", "OESTE") + "|" + uf
     por_nome = {c.chave_nome(n, uf): cod for cod, n, uf in mun.get("m", [])}
+    por_solto = {solto(n, uf): cod for cod, n, uf in mun.get("m", [])}
     soma: dict = {}
     falta = set()
     with c.abrir(MATRICULAS, timeout=180) as resp:
@@ -144,7 +150,7 @@ def matriculas_fundeb(ufs: list[str]) -> tuple[int | None, dict, dict]:
                 continue
             ano = c.inteiro(col[cab["nu_ano_censo"]])
             uf = col[cab["sg_uf"]]
-            cod = por_nome.get(c.chave_nome(col[cab["no_municipio_ge"]], uf))
+            cod = por_nome.get(c.chave_nome(col[cab["no_municipio_ge"]], uf)) or por_solto.get(solto(col[cab["no_municipio_ge"]], uf))
             if not cod:
                 falta.add(f"{col[cab['no_municipio_ge']]}/{uf}")
                 continue
