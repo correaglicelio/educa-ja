@@ -296,6 +296,8 @@ tr.tot td{font-weight:700; border-bottom:0}
 .escopo button{border:0; background:transparent; padding:7px 14px; border-radius:999px; font-weight:700; font-size:14px; color:var(--muted); white-space:nowrap}
 .escopo button[aria-pressed="true"]{background:var(--surface); color:var(--ink); box-shadow:inset 0 -3px 0 var(--lapis), var(--shadow)}
 .escopo button:disabled{opacity:.45; cursor:default}
+.abas-apr{align-self:flex-start}
+.abas-apr button{font-size:15px; padding:8px 18px}
 .seletores{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center}
 .seletores .rot{font-size:12.5px; font-weight:600; color:var(--muted); margin-right:6px}
 .kpi .var{font-size:13px; font-weight:700; margin-top:2px}
@@ -517,10 +519,11 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let IDEB_META = null, IDEB_BR = null, G_META = null;
+let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null;
+const ENEM = new Map();
 const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, gOrd: "nome", etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -573,6 +576,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarEnem(uf){
+  if (!ENEM_META || !ENEM_META.ufs.includes(uf)) return null;
+  if (!ENEM.has(uf)) ENEM.set(uf, getJSON(`data/enem/${uf}.json`).catch(e => { ENEM.delete(uf); throw e; }));
+  return ENEM.get(uf);
+}
 async function carregarGastos(uf){
   if (!G_META || !G_META.ufs.includes(uf)) return null;
   if (!GASTOS.has(uf)) GASTOS.set(uf, getJSON(`data/gastos/${uf}.json`).catch(e => { GASTOS.delete(uf); throw e; }));
@@ -595,7 +603,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null)]); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null)]); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -687,6 +695,11 @@ const DICAS = {
   mediana: "Valor do meio: metade dos municípios do estado fica acima e metade abaixo. Diferente da média, não é puxada por casos extremos.",
   parcial: "Valores acumulados de janeiro até o último bimestre enviado. No meio do ano é comum ficar abaixo dos mínimos, que valem para o ano inteiro.",
   anofechado: "Declaração do 6º bimestre, que cobre o ano inteiro. É ela que vale para conferir os mínimos da lei.",
+  enem: "<b>ENEM</b> é o Exame Nacional do Ensino Médio, do INEP, feito em novembro. Serve para entrar na faculdade (Sisu, Prouni, Fies). É <b>voluntário</b>: por isso a média depende de quem escolheu fazer a prova.",
+  enmedia: "Média das 5 notas: Linguagens, Ciências Humanas, Ciências da Natureza, Matemática e Redação. Só entram alunos que fizeram o ENEM enquanto cursavam o último ano do ensino médio e foram aos dois dias de prova.",
+  enareas: "As 4 provas objetivas são corrigidas pela <b>TRI</b> (Teoria de Resposta ao Item): a nota depende de quais questões o aluno acertou, não só de quantas. Não há nota máxima fixa; a média nacional fica perto de 500.",
+  redacao: "A redação vale de 0 a 1.000: cinco competências de até 200 pontos cada (norma culta, tema, argumentação, coesão e proposta de intervenção).",
+  enpart: "Alunos do último ano que foram aos dois dias de prova, de todos os que se inscreveram informando a escola. Faltar muito derruba o número de participantes e pode mudar a média.",
   ideb: "<b>Ideb</b> é o Índice de Desenvolvimento da Educação Básica, do INEP, de 0 a 10. Junta a nota da prova Saeb (português e matemática) com a taxa de aprovação. Sai a cada 2 anos.",
   saeb: "<b>Saeb</b> é a prova de português e matemática do INEP, aplicada no 5º e no 9º ano do fundamental e no fim do ensino médio. Quanto maior a nota, melhor.",
   aprovacao: "Percentual de alunos aprovados no ano, segundo o Censo Escolar. Entra no cálculo do Ideb: se muitos reprovam ou abandonam, o Ideb cai mesmo com nota boa.",
@@ -983,17 +996,27 @@ function cardAprendizagem(){
     <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span><h3>Aprendizagem (${T("ideb", "Ideb")})</h3></header>
     <div class="rs-big ${cls === "rs-alerta" ? "alerta" : ""}">${big}<small>${sub}</small></div>
     ${lista}
+    ${tabEnemCard()}
     ${cls === "rs-alerta" ? `<p class="rs-nota" style="margin:0;font-size:13px;color:var(--bad)">Abaixo de 5,0 nos anos iniciais: está entre os municípios com acompanhamento prioritário do MEC.</p>` : cls === "rs-atencao" ? `<p style="margin:0;font-size:13px;color:var(--warn)">O Ideb caiu em pelo menos uma etapa desde ${IDEB_META.anos[ult - 1]}.</p>` : ""}
     <span class="rs-link">Ver aprendizagem →</span>
     <span class="rs-periodo">${ICO_CAL}<span>${periodoIdeb()}</span></span>
   </button>`;
 }
+function tabEnemCard(){
+  if (!ENEM_META || !S.enem) return "";
+  const m = S.mun ? enMun(S.mun) : enRef(S.uf), ref = S.mun ? enRef(S.uf) : enRef("br");
+  if (!m?.n || m.media == null || m.n < ENEM_META.minimo) return "";
+  return rsTab([[`${T("enem", "ENEM")} ${ENEM_META.ano}`], [S.mun ? "Cidade" : esc(siglaUF(S.uf)), "n"], [S.mun ? esc(siglaUF(S.uf)) : "Brasil", "n"]],
+    [[T("enmedia", "Média geral"), `<b>${f1(m.media)}</b>`, f1(ref?.media)], [T("redacao", "Redação"), `<b>${f0(m.notas?.[4])}</b>`, f0(ref?.notas?.[4])]]);
+}
 function cardVazio(tit, ic, txt){ return `<div class="rs-card breve"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${tit}</h3></header><p>${txt}</p></div>`; }
 
 function linhaIdebCard(cod){
-  const e = S.ideb?.e?.[cod]; if (!e || !IDEB_META) return "";
+  const e = S.ideb?.e?.[cod] || {}; if (!IDEB_META) return "";
   const p = ["ai", "af", "em"].filter(et => val(e[et], "ideb", iUlt()) != null).map(et => `${{ai: "AI", af: "AF", em: "EM"}[et]} <b>${f1(val(e[et], "ideb", iUlt()))}</b>`);
-  return p.length ? `<span class="ideb">Ideb ${IDEB_META.ano}: ${p.join(" · ")}</span>` : "";
+  const en = ENEM_META && S.enem?.e?.[cod] ? enE(S.enem.e[cod][enUlt()]) : null;
+  if (en?.media != null) p.push(`ENEM ${ENEM_META.ano} <b>${f1(en.media)}</b>`);
+  return p.length ? `<span class="ideb">${p[0].startsWith("ENEM") ? "" : "Ideb " + IDEB_META.ano + ": "}${p.join(" · ")}</span>` : "";
 }
 function caixaIdebFicha(cod){
   const e = S.ideb?.e?.[cod]; if (!IDEB_META) return "";
@@ -1053,6 +1076,12 @@ function seletoresIdeb(mun){
 }
 
 function renderAprendizagem(){
+  if (S.aTab === "enem" && ENEM_META) renderEnem(); else renderIdeb();
+  const cab = $("#aprendizagem .vhead");
+  if (cab && ENEM_META) cab.insertAdjacentHTML("afterend", `<div class="abas-apr escopo" role="tablist">
+    <button type="button" data-atab="ideb" aria-pressed="${S.aTab !== "enem"}">Ideb e Saeb</button><button type="button" data-atab="enem" aria-pressed="${S.aTab === "enem"}">ENEM</button></div>`);
+}
+function renderIdeb(){
   const el = $("#aprendizagem");
   const titulo = "Aprendizagem em " + esc(lugar());
   if (!IDEB_META){ el.innerHTML = cabecalhoA(titulo, "Ideb e Saeb") + `<div class="aviso">${ICO.info}<div>Os dados do Ideb ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
@@ -1093,6 +1122,128 @@ function renderAprendizagem(){
     </div>
     ${tabelaEscolasIdeb()}
     <p class="src">${fonteIdeb()}</p>`;
+}
+
+/* ===================== ENEM ===================== */
+// município: [inscritos, presentes, CN, CH, LC, MT, redação, média]; escola: [n] ou [n, CN, CH, LC, MT, redação, média]
+const enM = (arr) => arr && arr.length > 2 ? {insc: arr[0], n: arr[1], notas: arr.slice(2, 7), media: arr[7]} : arr ? {insc: arr[0], n: arr[1] || 0, notas: null, media: null} : null;
+const enE = (arr) => arr ? (arr.length > 1 ? {n: arr[0], notas: arr.slice(1, 6), media: arr[6]} : {n: arr[0], notas: null, media: null}) : null;
+const enUlt = () => ENEM_META.anos.length - 1;
+function enMun(mun, rede = "0", k = enUlt()){ return enM(S.enem?.m?.[mun]?.[rede]?.[k]); }
+function enRef(chave, rede = "0", k = enUlt()){ return enM(ENEM_BR?.uf?.[chave]?.[rede]?.[k]); }
+const ORDEM_AREAS = [2, 1, 0, 3, 4];   // Linguagens, Humanas, Natureza, Matemática, Redação
+function periodoEnem(){ return `${ENEM_META.periodo} · comparação com ${ENEM_META.anos[0]}`; }
+function fonteEnem(){ return `Fonte: ${esc(ENEM_META.fonte)}. ${esc(ENEM_META.aviso)} Dados atualizados em ${dataBR(ENEM_META.gerado_em)}.`; }
+function dif(a, b){ if (a == null || b == null) return ""; const d = Math.round((a - b) * 10) / 10;
+  return d > 0 ? `<span class="ok" style="color:var(--ok)">▲ ${f1(d)}</span>` : d < 0 ? `<span style="color:var(--bad)">▼ ${f1(-d)}</span>` : `<span class="fraco">=</span>`; }
+function nomeEsc(cod){ const r = S.rows.find(x => x[C.codigo] === +cod); return r ? tituloEscola(r[C.nome]) : "Escola " + cod; }
+function redeEsc(cod){ const r = S.rows.find(x => x[C.codigo] === +cod); return r ? REDE[r[C.rede]] : ""; }
+
+function renderEnem(){
+  const el = $("#aprendizagem"), ano = ENEM_META.ano, ant = ENEM_META.anos[0], k = enUlt();
+  const titulo = "Aprendizagem em " + esc(lugar());
+  const acoes = `<button class="btn" id="en-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.enem){ el.innerHTML = cabecalhoA(titulo, periodoEnem()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do ENEM de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const uf = enRef(S.uf), br = enRef("br");
+  if (!S.mun){ el.innerHTML = cabecalhoA(titulo, periodoEnem(), acoes) + estadoEnem(uf, br) + `<p class="src">${fonteEnem()}</p>`; return; }
+  const m = enMun(S.mun), ma = enMun(S.mun, "0", k - 1);
+  if (!m || !m.n){ el.innerHTML = cabecalhoA(titulo, periodoEnem()) + `<div class="aviso">${ICO.info}<div>Nenhum aluno de escola de ${esc(lugar())} fez as provas do ${T("enem", "ENEM")} ${ano}.</div></div>`; return; }
+  const faltou = m.insc ? Math.round((1 - m.n / m.insc) * 100) : null;
+  // posição no estado (cidades com pelo menos 10 participantes)
+  const rank = kk => Object.keys(S.enem.m).map(c => enMun(c, "0", kk)).filter(x => x && x.n >= ENEM_META.minimo && x.media != null).map(x => x.media).sort((a, b) => b - a);
+  const lst = rank(k), lstA = rank(k - 1);
+  const pos = m.n >= ENEM_META.minimo && m.media != null ? lst.filter(v => v > m.media).length + 1 : null;
+  const posA = ma && ma.n >= ENEM_META.minimo && ma.media != null ? lstA.filter(v => v > ma.media).length + 1 : null;
+  // por rede
+  const redes = [3, 2, 1, 4].map(r => ({r, a: enMun(S.mun, String(r)), b: enMun(S.mun, String(r), k - 1)})).filter(x => x.a?.n);
+  el.innerHTML = cabecalhoA(titulo, periodoEnem(), acoes) + `
+    <div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>${T("enmedia", "média geral")} do ${T("enem", "ENEM")}, entre cidades com ${ENEM_META.minimo} ou mais participantes</small></h3>
+      <div class="posicoes">
+        <div class="pos-item destaque"><div class="pos-tit">ENEM ${ano}</div>
+          ${pos ? `<div class="rank"><b>${pos}º</b><span>de ${fmt(lst.length)} cidades</span></div><p class="pos-sub">${esc(nomeMun(S.mun))}: <b>${f1(m.media)}</b> · ${esc(siglaUF(S.uf))}: ${f1(uf?.media)} · Brasil: ${f1(br?.media)}</p>`
+            : `<p class="src">Menos de ${ENEM_META.minimo} participantes: sem posição.</p>`}</div>
+        <div class="pos-item"><div class="pos-tit">ENEM ${ant}</div>
+          ${posA ? `<div class="rank"><b>${posA}º</b><span>de ${fmt(lstA.length)} cidades</span></div><p class="pos-sub">${esc(nomeMun(S.mun))}: <b>${f1(ma.media)}</b></p>` : `<p class="src">Sem posição em ${ant}.</p>`}</div>
+      </div></div>
+    <div class="kpis">
+      <div class="kpi"><div class="k">${T("enmedia", "Média geral")} ${ano}</div><div class="v">${f1(m.media)}</div><div class="s">em ${ant}: ${f1(ma?.media)} ${dif(m.media, ma?.media)}</div></div>
+      <div class="kpi"><div class="k">${T("redacao", "Redação")}</div><div class="v">${f0(m.notas?.[4])}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(uf?.notas?.[4])} · Brasil: ${f0(br?.notas?.[4])}</div></div>
+      <div class="kpi"><div class="k">Matemática</div><div class="v">${f0(m.notas?.[3])}</div><div class="s">${esc(siglaUF(S.uf))}: ${f0(uf?.notas?.[3])} · Brasil: ${f0(br?.notas?.[3])}</div></div>
+      <div class="kpi ${faltou != null && faltou >= 30 ? "atencao" : ""}"><div class="k">${T("enpart", "Participantes")}</div><div class="v">${fmt(m.n)}</div><div class="s">de ${fmt(m.insc)} inscritos · ${faltou}% faltaram</div></div>
+    </div>
+    <div class="grid2">
+      <div class="box"><h3>Notas por ${T("enareas", "área")} <small>ENEM ${ano}</small></h3>
+        ${rsTab([["Área"], [esc(nomeMun(S.mun)).length > 16 ? "Cidade" : esc(nomeMun(S.mun)), "n"], [esc(siglaUF(S.uf)), "n"], ["Brasil", "n"], [String(ant), "n"]],
+          ORDEM_AREAS.map(i => [ENEM_META.areas[i] === "Redação" ? T("redacao", "Redação") : ENEM_META.areas[i], `<b>${f1(m.notas?.[i])}</b>`, f1(uf?.notas?.[i]), f1(br?.notas?.[i]), `${f1(ma?.notas?.[i])}`]))}</div>
+      <div class="box"><h3>Por ${T("rede", "rede")} <small>escolas de ${esc(nomeMun(S.mun))}</small></h3>
+        ${redes.length ? rsTab([["Rede"], ["Participantes", "n"], [`Média ${ano}`, "n"], [String(ant), "n"]],
+          redes.map(x => [`<i class="dot" style="background:${COR_REDE[x.r]}"></i>${REDE[x.r]}`, fmt(x.a.n), `<b>${f1(x.a.media)}</b>`, f1(x.b?.media)])) : ""}
+        <p class="src" style="margin-top:10px">Comparar redes exige cuidado: escolas particulares e federais costumam selecionar alunos, e a participação no ENEM varia muito de uma rede para outra.</p></div>
+    </div>
+    ${tabelaEscolasEnem()}
+    <p class="src">${fonteEnem()}</p>`;
+}
+function linhasEscolasEnem(){
+  const k = enUlt();
+  return Object.entries(S.enem.e).filter(([cod]) => { const r = S.rows.find(x => x[C.codigo] === +cod); return r ? r[C.municipio] === S.mun : false; })
+    .map(([cod, v]) => ({cod: +cod, a: enE(v[k]), b: enE(v[k - 1])})).filter(x => x.a || x.b)
+    .sort((x, y) => (y.a?.media ?? -1) - (x.a?.media ?? -1) || (y.a?.n ?? 0) - (x.a?.n ?? 0));
+}
+function tabelaEscolasEnem(){
+  const lin = linhasEscolasEnem(), ano = ENEM_META.ano, ant = ENEM_META.anos[0];
+  if (!lin.length) return "";
+  return `<div class="box"><h3>Escolas de ${esc(nomeMun(S.mun))} <small>da maior para a menor ${T("enmedia", "média geral")} · toque para abrir a ficha</small></h3><div class="tablewrap"><table>
+    <thead><tr><th>Escola</th><th>Rede</th><th class="n">Part.</th><th class="n">Média ${ano}</th><th class="n">Redação</th><th class="n">Mat.</th><th class="n">${ant}</th></tr></thead>
+    <tbody>${lin.map(x => `<tr class="click" data-esc="${x.cod}"><td>${esc(nomeEsc(x.cod))}</td><td>${redeEsc(x.cod)}</td><td class="n">${fmt(x.a?.n)}</td>
+      <td class="n"><b>${x.a?.media != null ? f1(x.a.media) : x.a ? `<span class="fraco" style="font-weight:400">menos de ${ENEM_META.minimo}</span>` : "–"}</b></td>
+      <td class="n">${f0(x.a?.notas?.[4])}</td><td class="n">${f0(x.a?.notas?.[3])}</td><td class="n">${f1(x.b?.media)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="src" style="margin-top:8px">Só entram alunos que fizeram o ENEM no último ano do ensino médio. Escolas com menos de ${ENEM_META.minimo} participantes não têm média divulgada.</p></div>`;
+}
+function estadoEnem(uf, br){
+  const k = enUlt(), ano = ENEM_META.ano, ant = ENEM_META.anos[0];
+  const lin = Object.keys(S.enem.m).map(c => ({m: +c, a: enMun(c), b: enMun(c, "0", k - 1)})).filter(x => x.a?.n)
+    .sort((x, y) => ((y.a.n >= ENEM_META.minimo ? y.a.media : -1) ?? -1) - ((x.a.n >= ENEM_META.minimo ? x.a.media : -1) ?? -1));
+  const ufa = enRef(S.uf, "0", k - 1);
+  const redes = [3, 2, 1, 4].map(r => ({r, a: enRef(S.uf, String(r))})).filter(x => x.a?.n);
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">${T("enmedia", "Média geral")} ${esc(siglaUF(S.uf))} ${ano}</div><div class="v">${f1(uf?.media)}</div><div class="s">Brasil: ${f1(br?.media)} · em ${ant}: ${f1(ufa?.media)} ${dif(uf?.media, ufa?.media)}</div></div>
+      <div class="kpi"><div class="k">${T("redacao", "Redação")}</div><div class="v">${f0(uf?.notas?.[4])}</div><div class="s">Brasil: ${f0(br?.notas?.[4])}</div></div>
+      <div class="kpi"><div class="k">Matemática</div><div class="v">${f0(uf?.notas?.[3])}</div><div class="s">Brasil: ${f0(br?.notas?.[3])}</div></div>
+      <div class="kpi"><div class="k">${T("enpart", "Participantes")}</div><div class="v">${fmt(uf?.n)}</div><div class="s">de ${fmt(uf?.insc)} inscritos no último ano</div></div>
+    </div>
+    ${redes.length ? `<div class="box"><h3>Por ${T("rede", "rede")} <small>${esc(nomeUF(S.uf))}, ENEM ${ano}</small></h3>${rsTab([["Rede"], ["Participantes", "n"], ["Média", "n"], ["Brasil", "n"]],
+      redes.map(x => [`<i class="dot" style="background:${COR_REDE[x.r]}"></i>${REDE[x.r]}`, fmt(x.a.n), `<b>${f1(x.a.media)}</b>`, f1(enRef("br", String(x.r))?.media)]))}</div>` : ""}
+    <div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>da maior para a menor média · toque para abrir</small></h3>
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table>
+      <thead><tr><th class="n">#</th><th>Município</th><th class="n">Part.</th><th class="n">Média ${ano}</th><th class="n">Redação</th><th class="n">Mat.</th><th class="n">${ant}</th></tr></thead>
+      <tbody>${lin.map((x, i) => `<tr class="click" data-mun="${x.m}"><td class="n">${x.a.n >= ENEM_META.minimo ? i + 1 : ""}</td><td>${esc(nomeMun(x.m))}</td><td class="n">${fmt(x.a.n)}</td>
+        <td class="n"><b>${x.a.n >= ENEM_META.minimo ? f1(x.a.media) : `<span class="fraco" style="font-weight:400">menos de ${ENEM_META.minimo}</span>`}</b></td>
+        <td class="n">${x.a.n >= ENEM_META.minimo ? f0(x.a.notas?.[4]) : ""}</td><td class="n">${x.a.n >= ENEM_META.minimo ? f0(x.a.notas?.[3]) : ""}</td><td class="n">${f1(x.b?.media)}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function caixaEnemFicha(cod){
+  if (!ENEM_META || !S.enem) return "";
+  const v = S.enem.e?.[cod]; const k = enUlt(), ano = ENEM_META.ano, ant = ENEM_META.anos[0];
+  const r = S.rows.find(x => x[C.codigo] === cod);
+  if (!v && !(r && r[C.mat_medio])) return "";
+  const a = enE(v?.[k]), b = enE(v?.[k - 1]);
+  if (!a?.notas) return `<div class="box"><h3>${T("enem", "ENEM")} ${ano}</h3><p class="src">${a ? `${fmt(a.n)} aluno${a.n === 1 ? "" : "s"} do último ano fez${a.n === 1 ? "" : "eram"} as provas: menos de ${ENEM_META.minimo}, sem média divulgada.` : `Nenhum aluno desta escola fez as provas do ENEM ${ano}.`}</p></div>`;
+  return `<div class="box"><h3>${T("enem", "ENEM")} ${ano} <small>${fmt(a.n)} participantes do último ano</small></h3><div class="dl">
+    <span>${T("enmedia", "Média geral")}</span><span>${f1(a.media)} <small style="color:var(--muted);font-weight:400">· ${ant}: ${f1(b?.media)}</small></span>
+    ${ORDEM_AREAS.map(i => `<span style="color:var(--muted);padding-left:12px">${ENEM_META.areas[i]}</span><span>${f1(a.notas[i])}</span>`).join("")}
+  </div></div>`;
+}
+async function exportarCSVEnem(){
+  if (!ENEM_META || !S.enem) return toast("Sem dados para exportar");
+  const n = v => v == null ? "" : String(v).replace(".", ",");
+  const cab = ["Ano", "Tipo", "Código", "Nome", "Rede", "Inscritos", "Participantes", ...ENEM_META.areas, "Média geral"];
+  const linhas = [];
+  ENEM_META.anos.forEach((ano, k) => {
+    for (const [mun, d] of Object.entries(S.enem.m)) if (!S.mun || +mun === S.mun) for (const [rede, arr] of Object.entries(d)) { const x = enM(arr[k]); if (x)
+      linhas.push([ano, "Município", mun, nomeMun(+mun), rede === "0" ? "Todas" : REDE[rede], x.insc, x.n, ...(x.notas || []).map(n), n(x.media)]); }
+    if (S.mun) for (const l of linhasEscolasEnem()){ const x = enE(S.enem.e[l.cod][k]); if (x) linhas.push([ano, "Escola", l.cod, nomeEsc(l.cod), redeEsc(l.cod), "", x.n, ...(x.notas || ["", "", "", "", ""]).map(n), n(x.media)]); }
+  });
+  const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  await salvar(`educa-ja-enem-${semAcento(lugar()).replace(/\W+/g, "-")}-${ENEM_META.ano}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
 function cabecalhoA(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
@@ -1430,6 +1581,7 @@ function abrirFicha(cod, {semHistorico} = {}){
         ${nz(C.mat_especial, "Educação especial (deficiência, autismo, altas habilidades)")}${nz(C.mat_integral, "Em tempo integral")}
         ${nz(C.mat_moram_zona_rural, "Moram na zona rural")}${nz(C.mat_transporte_publico, "Usam transporte escolar público")}</div>` : `<p class="src">Sem alunos matriculados ${ativa(r) ? "na data do Censo" : "(escola paralisada)"}.</p>`}</div>
       ${caixaIdebFicha(cod)}
+      ${caixaEnemFicha(cod)}
       <div class="box"><h3>Professores <small>(na data do Censo)</small></h3><div class="dl">
         ${n(C.docentes, "Professores")}${n(C.docentes_superior, "Com curso superior")}${n(C.docentes_licenciatura, "Com licenciatura")}
         ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}</div></div>
@@ -1483,6 +1635,9 @@ function ligar(){
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
     if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
     const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
+    const at = t.closest("[data-atab]"); if (at){ S.aTab = at.dataset.atab; renderAprendizagem(); renderPainel(); return; }
+    const eo = t.closest("[data-enord]"); if (eo){ S.enOrd = eo.dataset.enord; renderAprendizagem(); return; }
+    if (t.closest("#en-csv")){ exportarCSVEnem(); return; }
     const be = t.closest("[data-etapa]"); if (be && !be.disabled){ S.etapa = be.dataset.etapa; S.rede = null; renderAprendizagem(); return; }
     const br = t.closest("[data-arede]"); if (br && !br.disabled){ S.rede = br.dataset.arede; renderAprendizagem(); return; }
     const tm = t.closest("tr[data-mun]"); if (tm){ escolherMun(+tm.dataset.mun); $("#v-" + S.view).scrollTop = 0; return; }
@@ -1516,6 +1671,7 @@ async function iniciar(){
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
+    [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
     META = meta; UFS = mj.ufs;
     C = Object.fromEntries(meta.campos.map((k, i) => [k, i]));
