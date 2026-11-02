@@ -83,6 +83,7 @@ symbol .da{fill:var(--c1, var(--accent))} symbol .db{fill:var(--c2, color-mix(in
 .field label{font-size:12.5px; font-weight:600; color:var(--muted)}
 .field select,.field input{height:42px; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:0 12px; min-width:0}
 #uf{width:96px}
+.field.cod input{width:140px; font-variant-numeric:tabular-nums; letter-spacing:.04em}
 .field.grow{flex:0 1 360px; position:relative}
 #cidade{width:100%}
 .sugbox{position:absolute; top:100%; left:0; right:0; z-index:1500; margin-top:4px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:4px; list-style:none; max-height:320px; overflow:auto}
@@ -174,6 +175,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 .esc:hover{border-color:var(--accent)}
 .esc .stripe{grid-row:1 / span 3; border-radius:4px; background:var(--c)}
 .esc h4{margin:0; font-size:15px; line-height:1.25; font-weight:700; overflow-wrap:anywhere}
+.esc h4 .inep{display:block; margin-top:3px; font-family:var(--f-body); font-size:12.5px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; letter-spacing:.02em}
 .esc .mat{font-family:var(--f-display); font-weight:800; font-size:18px; text-align:right; line-height:1.1; font-variant-numeric:tabular-nums}
 .esc .mat small{display:block; font-family:var(--f-body); font-weight:500; font-size:11.5px; color:var(--muted)}
 .esc .meta{grid-column:2 / span 2; display:flex; flex-wrap:wrap; gap:5px; margin-top:7px}
@@ -251,8 +253,9 @@ tr.tot td{font-weight:700; border-bottom:0}
   .top .brand b{color:#fff} .top .brand b em{color:var(--lapis)} .top .brand small{color:rgb(255 255 255 / .75)}
   .brand .logo{width:38px; height:38px} .brand b{font-size:25px}
   .top .views,.top .menu-tit,.top .rodape{display:none}
-  .field.grow{flex:1 1 0}
-  #todo-estado{order:5; flex:1 1 100%; height:auto; border:0; background:none; padding:0; justify-content:flex-start; color:var(--accent); font-size:14px; text-decoration:underline; text-underline-offset:3px}
+  .field.grow{flex:1 1 calc(100% - 110px)}
+  .field.cod{order:4; flex:0 0 150px} .field.cod input{width:100%}
+  #todo-estado{order:5; align-self:flex-end; padding-bottom:10px !important; flex:1 1 0; height:auto; border:0; background:none; padding:0; justify-content:flex-start; color:var(--accent); font-size:14px; text-decoration:underline; text-underline-offset:3px}
   .kpis{grid-template-columns:repeat(2, minmax(0,1fr))}
   .grid2{grid-template-columns:minmax(0,1fr)}
   .nums{grid-template-columns:repeat(2, minmax(0,1fr))}
@@ -321,6 +324,8 @@ tr.tot td{font-weight:700; border-bottom:0}
     <div class="field grow"><label for="cidade">Município</label>
       <input id="cidade" placeholder="Digite o nome da cidade" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list">
       <ul class="sugbox" id="sug" role="listbox" hidden></ul></div>
+    <div class="field cod"><label for="cod-inep">Código INEP</label>
+      <input id="cod-inep" type="search" inputmode="numeric" maxlength="8" placeholder="8 dígitos" autocomplete="off" aria-describedby="note"></div>
     <button class="btn" id="todo-estado" type="button" hidden>Ver o estado todo</button>
     <p class="note" id="note" role="status"></p>
   </section>
@@ -387,7 +392,7 @@ let C = {};                 // índice de cada campo das escolas (vem do meta.js
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
 const S = {uf: null, mun: null, view: "painel", rows: [],
-  f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", cod: "", paral: false, ord: "nome", lim: 60}};
+  f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
 async function getJSON(url){
@@ -563,7 +568,6 @@ function filtradas(){
   let rows = (S.mun ? S.rows.filter(r => r[C.municipio] === S.mun) : S.rows)
     .filter(r => (f.paral || ativa(r)) && f.redes.has(r[C.rede]) && f.locs.has(r[C.localizacao]));
   if (q) rows = rows.filter(r => semAcento(r[C.nome]).includes(q));
-  if (f.cod) rows = rows.filter(r => String(r[C.codigo]).startsWith(f.cod));
   const cmp = {nome: (a, b) => semAcento(a[C.nome]).localeCompare(semAcento(b[C.nome])),
     mat: (a, b) => (b[C.mat_total] || 0) - (a[C.mat_total] || 0) || semAcento(a[C.nome]).localeCompare(semAcento(b[C.nome]))}[f.ord];
   return rows.sort(cmp);
@@ -611,10 +615,8 @@ function renderEscolas(){
         <div class="chips"><span class="rot">Local</span><button type="button" class="chip" data-loc="1" aria-pressed="${S.f.locs.has(1)}"><i></i>Urbana</button><button type="button" class="chip" data-loc="2" aria-pressed="${S.f.locs.has(2)}"><i></i>Rural</button>
           <label class="tog" style="margin-left:8px"><input type="checkbox" id="e-paral" ${S.f.paral ? "checked" : ""}>Mostrar paralisadas</label></div>
         <div class="linha-busca"><input class="busca" id="e-q" type="search" placeholder="Buscar escola pelo nome" value="${esc(S.f.q)}" aria-label="Buscar escola pelo nome">
-          <input class="busca cod" id="e-cod" type="search" inputmode="numeric" maxlength="8" placeholder="Código INEP" value="${esc(S.f.cod)}" aria-label="Código INEP da escola (8 dígitos)" aria-describedby="e-cod-dica">
           <select id="e-ord" aria-label="Ordenar"><option value="nome" ${S.f.ord === "nome" ? "selected" : ""}>Ordem alfabética</option><option value="mat" ${S.f.ord === "mat" ? "selected" : ""}>Mais alunos primeiro</option></select></div>
       </div>
-      <p class="src" id="e-cod-dica" style="margin-top:6px">Com os 8 dígitos do código INEP, a escola é encontrada em qualquer cidade do Brasil e a ficha abre direto.</p>
       <p class="resumo-lista" id="e-resumo" style="margin:12px 0 10px"></p>
       <div class="lista" id="e-lista"></div>
     </div>
@@ -640,7 +642,7 @@ function renderLista(){
     const falta = publica(r) && ativa(r) ? BASICO.filter(([, f]) => f(r)).map(([n]) => n) : [];
     const et = etapas(r);
     return `<button type="button" class="esc r${r[C.rede]}" data-esc="${r[C.codigo]}">
-      <span class="stripe"></span><h4>${esc(tituloEscola(r[C.nome]))}</h4>
+      <span class="stripe"></span><h4>${esc(tituloEscola(r[C.nome]))}<small class="inep">INEP ${r[C.codigo]}</small></h4>
       <span class="mat">${fmt(r[C.mat_total] || 0)}<small>alunos</small></span>
       <span class="meta"><span class="pill rede">${REDE[r[C.rede]]}</span><span class="pill">${r[C.localizacao] === 2 ? "Rural" : "Urbana"}</span>
         ${r[C.loc_diferenciada] ? `<span class="pill dif">${esc(META.loc_diferenciada[r[C.loc_diferenciada]] || "")}</span>` : ""}
@@ -676,8 +678,8 @@ async function buscarCodigo(cod, {doLink} = {}){
   catch { nota("Não foi possível carregar os dados desse estado agora. Tente de novo.", true); return; }
   const r = rows.find(x => x[C.codigo] === cod);
   if (!r){ nota(`Nenhuma escola em atividade ou paralisada com o código ${cod} no Censo Escolar ${META.ano}.`, true); if (doLink) setView("escolas"); return; }
-  nota("");
-  S.f.cod = ""; S.f.q = "";
+  nota(""); $("#cod-inep").value = ""; $("#cod-inep").blur();
+  S.f.q = "";
   if (uf !== S.uf) await trocarUF(uf, r[C.municipio]);
   else if (S.mun !== r[C.municipio]) escolherMun(r[C.municipio]);
   else renderTudo();
@@ -770,6 +772,7 @@ function ligar(){
     else if (e.key === "Enter"){ e.preventDefault(); if (sugItens[sugIdx]){ escolherMun(sugItens[sugIdx][0]); cid.blur(); } }
     else if (e.key === "Escape"){ cid.value = ""; cid.blur(); }
   });
+  $("#cod-inep").addEventListener("keydown", e => { if (e.key === "Enter"){ const v = e.target.value; if (v.length === 8) buscarCodigo(+v); else nota("O código INEP tem 8 dígitos.", true); } });
   $("#sug").addEventListener("mousedown", e => { const li = e.target.closest("li[data-id]"); if (li){ e.preventDefault(); escolherMun(+li.dataset.id); cid.blur(); } });
 
   document.addEventListener("click", e => {
@@ -786,11 +789,12 @@ function ligar(){
   });
   document.addEventListener("input", e => {
     if (e.target.id === "e-q"){ S.f.q = e.target.value; S.f.lim = 60; renderLista(); }
-    if (e.target.id === "e-cod"){
+    if (e.target.id === "cod-inep"){
       const v = e.target.value.replace(/\D/g, "").slice(0, 8);
       if (v !== e.target.value) e.target.value = v;
-      S.f.cod = v; S.f.lim = 60; renderLista();
       if (v.length === 8) buscarCodigo(+v);
+      else if (v.length) nota(`Digite os 8 dígitos do código INEP (faltam ${8 - v.length}).`);
+      else nota("");
     }
   });
   document.addEventListener("change", e => {
