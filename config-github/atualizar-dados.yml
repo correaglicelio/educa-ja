@@ -56,6 +56,11 @@ jobs:
         run: python scripts/coletar_gastos.py --uf todas
         continue-on-error: true
         timeout-minutes: 60
+      - name: Fluxo escolar (INEP, indicadores educacionais)
+        id: fluxo
+        run: python scripts/coletar_fluxo.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 60
       - name: ENEM por escola (INEP; só baixa quando sai edição nova)
         id: enem
         run: |
@@ -76,6 +81,7 @@ jobs:
             echo "| Escolas | ${{ steps.escolas.outcome }} |"
             echo "| Ideb e Saeb | ${{ steps.ideb.outcome }} |"
             echo "| Gastos (SIOPE) | ${{ steps.gastos.outcome }} |"
+            echo "| Fluxo escolar | ${{ steps.fluxo.outcome }} |"
             echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
             echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
