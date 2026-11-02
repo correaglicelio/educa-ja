@@ -8,7 +8,7 @@ on:
       modulo:
         description: "Coleta"
         type: choice
-        options: [escolas, ideb, gastos, municipios, testar_fontes]
+        options: [escolas, ideb, gastos, enem, municipios, testar_fontes]
         default: ideb
       uf:
         description: "Estados (MT, MT,GO ou todas)"
@@ -30,6 +30,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 7-Zip (para o ENEM)
+        if: inputs.modulo == 'enem'
+        run: command -v 7z || (sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full)
       - name: Coleta
         run: |
           if [ "${{ inputs.modulo }}" = "testar_fontes" ]; then python scripts/testar_fontes.py;

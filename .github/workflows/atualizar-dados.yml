@@ -56,6 +56,13 @@ jobs:
         run: python scripts/coletar_gastos.py --uf todas
         continue-on-error: true
         timeout-minutes: 60
+      - name: ENEM por escola (INEP; só baixa quando sai edição nova)
+        id: enem
+        run: |
+          command -v 7z || (sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full)
+          python scripts/coletar_enem.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 90
 
       - name: Resumo da coleta
         if: always()
@@ -69,6 +76,7 @@ jobs:
             echo "| Escolas | ${{ steps.escolas.outcome }} |"
             echo "| Ideb e Saeb | ${{ steps.ideb.outcome }} |"
             echo "| Gastos (SIOPE) | ${{ steps.gastos.outcome }} |"
+            echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
             echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
           } >> "$GITHUB_STEP_SUMMARY"
