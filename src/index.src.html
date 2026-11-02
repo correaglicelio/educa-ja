@@ -229,6 +229,16 @@ tr.tot td{font-weight:700; border-bottom:0}
 .rs-ic .dico{width:24px; height:24px}
 .rs-big{font-family:var(--f-display); font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.05; font-variant-numeric:tabular-nums}
 .rs-big small{display:block; font-family:var(--f-body); font-size:13.5px; font-weight:500; color:var(--muted); letter-spacing:0; margin-top:3px}
+/* mini-tabela dos cards (opção A) */
+.rs-tab{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+.rs-tab th{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); text-align:left; padding:0 0 4px; border-bottom:1px solid var(--line); white-space:nowrap}
+.rs-tab td{padding:5px 0; border-bottom:1px solid var(--line); vertical-align:baseline}
+.rs-tab tr:last-child td{border-bottom:0}
+.rs-tab th + th, .rs-tab td + td{padding-left:10px}
+.rs-tab .n{text-align:right; white-space:nowrap} .rs-tab td.n b{font-weight:800}
+.rs-tab .ok{color:var(--ok)} .rs-tab .bad{color:var(--bad)} .rs-tab .warn{color:var(--warn)} .rs-tab .fraco{color:var(--muted)}
+.rs-tab .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:7px; vertical-align:1px}
+@media (max-width:380px){ .rs-tab{font-size:13px} .rs-tab th + th, .rs-tab td + td{padding-left:6px} }
 .rs-lista{margin:0; padding:0; list-style:none; display:grid; gap:5px; font-size:14px}
 .rs-lista b{font-variant-numeric:tabular-nums}
 .rs-pill{display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:1px 8px; font-weight:700; font-size:12.5px; white-space:nowrap; margin-right:4px}
@@ -634,6 +644,12 @@ function indicadores(pub){ return INDIC.map(([nome, f]) => { const n = pub.filte
 function faltasBasicas(pub){ return BASICO.map(([nome, f]) => ({nome, lista: pub.filter(f)})).filter(x => x.lista.length); }
 
 /* ===================== painel ===================== */
+// mini-tabela dos cards: cab = [[título, "n" p/ número]], linhas = [[html, ...]]
+function rsTab(cab, linhas){
+  return `<table class="rs-tab"><thead><tr>${cab.map(([t, a]) => `<th class="${a || ""}">${t}</th>`).join("")}</tr></thead>
+    <tbody>${linhas.map(l => `<tr>${l.map((c, i) => `<td class="${cab[i][1] || ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+const COR_REDE = {1: "var(--r-fed)", 2: "var(--r-est)", 3: "var(--r-mun)", 4: "var(--r-pri)"};
 function renderPainel(){
   const el = $("#painel");
   if (!S.rows.length){ el.innerHTML = cabecalho("painel", "Painel", ""); return; }
@@ -641,10 +657,13 @@ function renderPainel(){
   const R = resumo(rows), faltas = faltasBasicas(R.pub);
   const ind = indicadores(R.pub), internet = ind.find(x => x.nome.startsWith("Internet"));
   const cls = faltas.length ? "rs-alerta" : (internet.p != null && internet.p < 50 ? "rs-atencao" : "");
-  const redes = ORDEM_REDE.filter(k => R.porRede[k]).map(k => `<li><span class="pill rede r${k}" style="margin-right:6px">${REDE[k]}</span><b>${fmt(R.porRede[k].esc)}</b> escola${R.porRede[k].esc === 1 ? "" : "s"} · ${fmt(R.porRede[k].mat)} alunos</li>`).join("");
-  const alertas = faltas.length
-    ? faltas.map(f => `<li><span class="rs-pill bad">${fmt(f.lista.length)}</span>escola${f.lista.length > 1 ? "s" : ""} pública${f.lista.length > 1 ? "s" : ""} ${esc(f.nome)}</li>`).join("")
-    : `<li><span class="rs-pill ok">OK</span>Todas as escolas públicas têm água potável, energia e banheiro</li>`;
+  const redes = rsTab([["Rede"], ["Escolas", "n"], ["Alunos", "n"]],
+    ORDEM_REDE.filter(k => R.porRede[k]).map(k => [`<i class="dot" style="background:${COR_REDE[k]}"></i>${REDE[k]}`, `<b>${fmt(R.porRede[k].esc)}</b>`, fmt(R.porRede[k].mat)]));
+  const ip = internet.p == null ? "–" : Math.round(internet.p) + "%";
+  const alertas = rsTab([["Escolas públicas"], ["", "n"]], [
+    ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
+      : [["Água, energia e banheiro", `<b class="ok">todas ✓</b>`]]),
+    ["Internet para os alunos", `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
   const breve = [["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
     ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
@@ -653,9 +672,8 @@ function renderPainel(){
       <button type="button" class="rs-card ${cls}" data-ir="escolas">
         <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg></span><h3>Escolas</h3></header>
         <div class="rs-big">${fmt(R.at.length)}<small>escolas em atividade · ${fmt(R.mat)} matrículas</small></div>
-        <ul class="rs-lista">${redes}</ul>
-        <ul class="rs-lista">${alertas}
-          <li><span class="rs-pill ${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${internet.p == null ? "–" : Math.round(internet.p) + "%"}</span>das públicas com internet para os alunos</li></ul>
+        ${redes}
+        ${alertas}
         <span class="rs-link">Ver escolas →</span>
         <span class="rs-periodo">${ICO_CAL}<span>Censo Escolar ${META.ano} · situação na ${esc(META.data_referencia)}</span></span>
       </button>
@@ -860,17 +878,19 @@ function cardAprendizagem(){
     big = f1(v); sub = `${ETAPA_NOME[p.et].toLowerCase()}, rede ${p.r.toLowerCase()} · ${esc(siglaUF(S.uf))}: ${f1(val(uf?.s, "ideb", ult))}`;
     const caiu = linhas.some(x => { const a = val(x.s, "ideb", ult), b = val(x.s, "ideb", ult - 1); return a != null && b != null && a < b; });
     cls = p.et === "ai" && v != null && v < 5 ? "rs-alerta" : caiu ? "rs-atencao" : "";
-    lista = linhas.map(x => { const a = val(x.s, "ideb", ult), b = val(x.s, "ideb", ult - 1); const d = a != null && b != null ? Math.round((a - b) * 10) / 10 : null;
-      return `<li><span class="rs-pill ${d == null ? "" : d < 0 ? "bad" : "ok"}">${f1(a)}</span>${ETAPA_NOME[x.et]} · ${x.r.toLowerCase()} ${d == null ? "" : d > 0 ? "(▲ " + f1(d) + ")" : d < 0 ? "(▼ " + f1(Math.abs(d)) + ")" : "(=)"}</li>`; }).join("");
+    lista = rsTab([["Etapa"], ["Rede"], ["Ideb", "n"], ["vs " + IDEB_META.anos[ult - 1], "n"]], linhas.map(x => {
+      const a = val(x.s, "ideb", ult), b = val(x.s, "ideb", ult - 1); const d = a != null && b != null ? Math.round((a - b) * 10) / 10 : null;
+      return [ETAPA_NOME[x.et], x.r, `<b>${f1(a)}</b>`, d == null ? `<span class="fraco">–</span>` : d > 0 ? `<span class="ok">▲ ${f1(d)}</span>` : d < 0 ? `<span class="bad">▼ ${f1(Math.abs(d))}</span>` : `<span class="fraco">=</span>`]; }));
   } else {
     const d = IDEB_BR?.uf?.[S.uf]; if (!d) return "";
     big = f1(val(d.ai?.Total, "ideb", ult)); sub = `anos iniciais, todas as redes de ${esc(siglaUF(S.uf))}`;
-    lista = ["ai", "af", "em"].map(et => `<li><span class="rs-pill">${f1(val(d[et]?.Total, "ideb", ult))}</span>${ETAPA_NOME[et]} · Brasil ${f1(val(IDEB_BR.uf.br?.[et]?.Total, "ideb", ult))}</li>`).join("");
+    lista = rsTab([["Etapa"], [esc(siglaUF(S.uf)), "n"], ["Brasil", "n"]],
+      ["ai", "af", "em"].map(et => [ETAPA_NOME[et], `<b>${f1(val(d[et]?.Total, "ideb", ult))}</b>`, f1(val(IDEB_BR.uf.br?.[et]?.Total, "ideb", ult))]));
   }
   return `<button type="button" class="rs-card ${cls}" data-ir="aprendizagem">
     <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span><h3>Aprendizagem (Ideb)</h3></header>
     <div class="rs-big ${cls === "rs-alerta" ? "alerta" : ""}">${big}<small>${sub}</small></div>
-    <ul class="rs-lista">${lista}</ul>
+    ${lista}
     ${cls === "rs-alerta" ? `<p class="rs-nota" style="margin:0;font-size:13px;color:var(--bad)">Abaixo de 5,0 nos anos iniciais: está entre os municípios com acompanhamento prioritário do MEC.</p>` : cls === "rs-atencao" ? `<p style="margin:0;font-size:13px;color:var(--warn)">O Ideb caiu em pelo menos uma etapa desde ${IDEB_META.anos[ult - 1]}.</p>` : ""}
     <span class="rs-link">Ver aprendizagem →</span>
     <span class="rs-periodo">${ICO_CAL}<span>${periodoIdeb()}</span></span>
@@ -1102,12 +1122,10 @@ function cardGastos(){
     return `<button type="button" class="rs-card ${abaixo ? "rs-atencao" : ""}" data-ir="gastos">
       <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg></span><h3>Gastos com educação</h3></header>
       ${ueb ? `<div class="rs-big">${fPct(gv(e.b[ueb - 1], "mde"))}<small>governo de ${esc(nomeUF(S.uf))} em ${G_META.atual}, até o ${curtoBim(ueb)} (parcial)</small></div>` : ""}
-      <ul class="rs-lista">
-        <li><span class="rs-pill">${fmt((G_META.envios?.[S.uf]?.bimestres || [])[ref - 1] || 0)}</span>de ${fmt(semEnvio)} municípios já enviaram o ${curtoBim(ref)} de ${G_META.atual}</li></ul>
-      <p class="rs-sub">Ano fechado de ${anoP}</p>
-      <ul class="rs-lista">
-        <li><span class="rs-pill ${gv(e?.a?.at(-1), "mde") < 25 ? "bad" : "ok"}">${fPct(gv(e?.a?.at(-1), "mde"))}</span>aplicado pelo governo do estado (mínimo 25%)</li>
-        <li><span class="rs-pill ${abaixo ? "warn" : "ok"}">${fmt(abaixo)}</span>município${abaixo === 1 ? "" : "s"} abaixo de 25%</li></ul>
+      ${rsTab([[`${G_META.atual} (em curso)`], ["", "n"]], [[`Municípios que enviaram o ${curtoBim(ref)}`, `<b>${fmt((G_META.envios?.[S.uf]?.bimestres || [])[ref - 1] || 0)}</b> de ${fmt(semEnvio)}`]])}
+      ${rsTab([[`Ano fechado de ${anoP}`], ["Valor", "n"], ["Lei", "n"]], [
+        ["Governo do estado", `<b class="${gv(e?.a?.at(-1), "mde") < 25 ? "bad" : "ok"}">${fPct(gv(e?.a?.at(-1), "mde"))}</b>`, "mín. 25%"],
+        ["Municípios abaixo de 25%", `<b class="${abaixo ? "warn" : "ok"}">${fmt(abaixo)}</b>`, "mín. 25%"]])}
       <span class="rs-link">Ver gastos →</span><span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
   }
   const g = gMun(S.mun), st = situacaoEnvio(S.mun);
@@ -1120,12 +1138,10 @@ function cardGastos(){
     <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg></span><h3>Gastos com educação</h3></header>
     ${u ? `<div class="rs-big">${fPct(parc)}<small>dos impostos aplicados em educação em ${G_META.atual}, até o ${curtoBim(u)} (parcial) · mediana ${esc(siglaUF(S.uf))} no mesmo bimestre: ${fPct(med)}</small></div>`
         : `<div class="rs-big atencao">–<small>nenhum bimestre de ${G_META.atual} enviado ao SIOPE</small></div>`}
-    <p class="rs-sub">Ano fechado de ${anoP}</p>
-    <ul class="rs-lista">
-      <li><span class="rs-pill ${mde == null ? "" : mde < 25 ? "bad" : "ok"}">${fPct(mde)}</span>dos impostos em educação (mínimo 25%)</li>
-      <li><span class="rs-pill ${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</span>do FUNDEB na remuneração (mínimo 70%)</li>
-      <li><span class="rs-pill ${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</span>do FUNDEB sem aplicar (máximo 10%)</li>
-    </ul>
+    ${rsTab([[`Ano fechado de ${anoP}`], ["Valor", "n"], ["Lei", "n"]], [
+      ["Impostos em educação", `<b class="${mde == null ? "" : mde < 25 ? "bad" : "ok"}">${fPct(mde)}</b>`, "mín. 25%"],
+      ["FUNDEB na remuneração", `<b class="${fr == null ? "" : fr < 70 ? "bad" : "ok"}">${fPct(fr)}</b>`, "mín. 70%"],
+      ["FUNDEB sem aplicar", `<b class="${na == null ? "" : na > 10 ? "bad" : "ok"}">${fPct(na)}</b>`, "máx. 10%"]])}
     ${st.nivel ? `<p style="margin:0;font-size:13px;color:var(--${st.nivel === 2 ? "bad" : "warn"})">${esc(st.txt)}</p>` : ""}
     <span class="rs-link">Ver gastos →</span>
     <span class="rs-periodo">${ICO_CAL}<span>${periodoGastos()}</span></span></button>`;
