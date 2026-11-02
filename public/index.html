@@ -171,6 +171,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 .chip[aria-pressed="false"] i{background:transparent; box-shadow:inset 0 0 0 2px var(--c, var(--accent))}
 .linha-busca{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
 .busca{height:42px; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:0 12px; flex:1 1 240px; min-width:0}
+.busca.cod{flex:0 1 170px; font-variant-numeric:tabular-nums; letter-spacing:.04em}
 .linha-busca select{height:42px; border:1px solid var(--line); background:var(--bg); border-radius:10px; padding:0 10px}
 .tog{display:inline-flex; align-items:center; gap:7px; font-size:14px; cursor:pointer}
 .tog input{width:18px; height:18px; accent-color:var(--accent)}
@@ -189,6 +190,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 .pill{font-size:11.5px; font-weight:700; border-radius:999px; padding:2px 8px; background:var(--sunk); color:var(--muted); white-space:nowrap}
 .pill.rede{color:var(--c); background:color-mix(in srgb, var(--c) 14%, transparent)}
 .pill.paral{background:var(--bad-soft); color:var(--bad)}
+.pill.copiar{border:0; cursor:pointer; background:var(--accent-soft); color:var(--accent); font-family:var(--f-body)}
 .pill.dif{background:var(--lapis-soft); color:var(--lapis-ink)}
 .mais{justify-self:center}
 .vazio-lista{padding:28px 16px; text-align:center; color:var(--muted); grid-column:1 / -1}
@@ -393,7 +395,7 @@ let C = {};                 // índice de cada campo das escolas (vem do meta.js
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
 const S = {uf: null, mun: null, view: "painel", rows: [],
-  f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
+  f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", cod: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
 async function getJSON(url){
@@ -501,6 +503,8 @@ function marcarSug(i){
 
 /* ===================== navegação ===================== */
 function setView(v, {semHash} = {}){
+  const m = /^escola-(\d{8})$/.exec(v || "");
+  if (m){ buscarCodigo(+m[1], {doLink: true}); return; }
   if (!["painel", "escolas"].includes(v)) v = "painel";
   S.view = v;
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", b.dataset.view === v));
@@ -566,7 +570,8 @@ function filtradas(){
   const f = S.f, q = semAcento(f.q.trim());
   let rows = (S.mun ? S.rows.filter(r => r[C.municipio] === S.mun) : S.rows)
     .filter(r => (f.paral || ativa(r)) && f.redes.has(r[C.rede]) && f.locs.has(r[C.localizacao]));
-  if (q) rows = rows.filter(r => semAcento(r[C.nome]).includes(q) || String(r[C.codigo]) === q);
+  if (q) rows = rows.filter(r => semAcento(r[C.nome]).includes(q));
+  if (f.cod) rows = rows.filter(r => String(r[C.codigo]).startsWith(f.cod));
   const cmp = {nome: (a, b) => semAcento(a[C.nome]).localeCompare(semAcento(b[C.nome])),
     mat: (a, b) => (b[C.mat_total] || 0) - (a[C.mat_total] || 0) || semAcento(a[C.nome]).localeCompare(semAcento(b[C.nome]))}[f.ord];
   return rows.sort(cmp);
@@ -613,9 +618,11 @@ function renderEscolas(){
         <div class="chips"><span class="rot">Rede</span>${ORDEM_REDE.map(k => `<button type="button" class="chip r${k}" data-rede="${k}" aria-pressed="${S.f.redes.has(k)}"><i></i>${REDE[k]}</button>`).join("")}</div>
         <div class="chips"><span class="rot">Local</span><button type="button" class="chip" data-loc="1" aria-pressed="${S.f.locs.has(1)}"><i></i>Urbana</button><button type="button" class="chip" data-loc="2" aria-pressed="${S.f.locs.has(2)}"><i></i>Rural</button>
           <label class="tog" style="margin-left:8px"><input type="checkbox" id="e-paral" ${S.f.paral ? "checked" : ""}>Mostrar paralisadas</label></div>
-        <div class="linha-busca"><input class="busca" id="e-q" type="search" placeholder="Buscar escola pelo nome ou código do INEP" value="${esc(S.f.q)}" aria-label="Buscar escola">
+        <div class="linha-busca"><input class="busca" id="e-q" type="search" placeholder="Buscar escola pelo nome" value="${esc(S.f.q)}" aria-label="Buscar escola pelo nome">
+          <input class="busca cod" id="e-cod" type="search" inputmode="numeric" maxlength="8" placeholder="Código INEP" value="${esc(S.f.cod)}" aria-label="Código INEP da escola (8 dígitos)" aria-describedby="e-cod-dica">
           <select id="e-ord" aria-label="Ordenar"><option value="nome" ${S.f.ord === "nome" ? "selected" : ""}>Ordem alfabética</option><option value="mat" ${S.f.ord === "mat" ? "selected" : ""}>Mais alunos primeiro</option></select></div>
       </div>
+      <p class="src" id="e-cod-dica" style="margin-top:6px">Com os 8 dígitos do código INEP, a escola é encontrada em qualquer cidade do Brasil e a ficha abre direto.</p>
       <p class="resumo-lista" id="e-resumo" style="margin:12px 0 10px"></p>
       <div class="lista" id="e-lista"></div>
     </div>
@@ -667,6 +674,33 @@ async function exportarCSV(){
   await salvar(`educa-ja-escolas-${lugarArq}-${new Date().toISOString().slice(0, 10)}.csv`, new Blob([csv], {type: "text/csv"}));
 }
 
+/* ===================== busca pelo código INEP ===================== */
+/* Os 2 primeiros dígitos do código INEP são o código do estado (51 = MT). */
+async function buscarCodigo(cod, {doLink} = {}){
+  const uf = Math.floor(cod / 1e6);
+  if (!META || !META.ufs.includes(uf)){ nota(`O código ${cod} não corresponde a nenhum estado. Confira os 8 dígitos.`, true); if (doLink) setView("escolas"); return; }
+  let rows;
+  try { rows = uf === S.uf ? S.rows : await carregarUF(uf); }
+  catch { nota("Não foi possível carregar os dados desse estado agora. Tente de novo.", true); return; }
+  const r = rows.find(x => x[C.codigo] === cod);
+  if (!r){ nota(`Nenhuma escola em atividade ou paralisada com o código ${cod} no Censo Escolar ${META.ano}.`, true); if (doLink) setView("escolas"); return; }
+  nota("");
+  S.f.cod = ""; S.f.q = "";
+  if (uf !== S.uf) await trocarUF(uf, r[C.municipio]);
+  else if (S.mun !== r[C.municipio]) escolherMun(r[C.municipio]);
+  else renderTudo();
+  setView("escolas", {semHash: true});
+  history.replaceState(null, "", "#escolas");
+  abrirFicha(cod);
+}
+
+function copiarLink(cod){
+  const url = location.href.split("#")[0] + "#escola-" + cod;
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(() => toast("Link da escola copiado"), () => mostrarLink(url));
+  else mostrarLink(url);
+}
+function mostrarLink(url){ toast("Copie o endereço: " + url); }
+
 /* ===================== ficha da escola ===================== */
 let fichaAberta = null;
 function abrirFicha(cod, {semHistorico} = {}){
@@ -678,8 +712,8 @@ function abrirFicha(cod, {semHistorico} = {}){
     const sim = ((r[C.infra] || 0) >> i) & 1;
     const negativo = /^Sem /.test(nome);
     if (i === IB.indigena && !sim) return "";
-    if (negativo) return sim ? `<span>${ICO.ruim}<em class="ruim">${esc(nome)}</em></span>` : "";
-    const ruim = !sim && [IB.agua, IB.banheiro].includes(i);
+    if (negativo) return sim ? `<span>${ativa(r) ? ICO.ruim : ICO.nao}<em class="${ativa(r) ? "ruim" : ""}">${esc(nome)}</em></span>` : "";
+    const ruim = !sim && ativa(r) && [IB.agua, IB.banheiro].includes(i);
     return `<span>${sim ? ICO.sim : (ruim ? ICO.ruim : ICO.nao)}<em class="${ruim ? "ruim" : ""}">${sim ? "" : "Não tem: "}${esc(nome)}</em></span>`;
   }).join("");
   const fundo = document.createElement("div"); fundo.className = "ficha-fundo"; fundo.id = "ficha";
@@ -691,7 +725,8 @@ function abrirFicha(cod, {semHistorico} = {}){
         ${r[C.loc_diferenciada] ? `<span class="pill dif">${esc(META.loc_diferenciada[r[C.loc_diferenciada]] || "")}</span>` : ""}
         ${ativa(r) ? "" : `<span class="pill paral">Paralisada</span>`}
         ${r[C.conveniada] === 1 ? `<span class="pill">Conveniada com o poder público</span>` : ""}
-        <span class="pill">${esc(nomeMun(r[C.municipio]))} · INEP ${r[C.codigo]}</span></div>
+        <span class="pill">${esc(nomeMun(r[C.municipio]))} · ${esc(siglaUF(Math.floor(r[C.codigo] / 1e6)))}</span>
+        <button type="button" class="pill copiar" data-copiar="${r[C.codigo]}" title="Copiar o link desta escola">Código INEP ${r[C.codigo]} · copiar link</button></div>
     </div>
     <div class="ficha-corpo">
       <div class="nums">
@@ -700,11 +735,11 @@ function abrirFicha(cod, {semHistorico} = {}){
         <div class="num"><b>${fmt(r[C.docentes] || 0)}</b><span>professores</span></div>
         <div class="num"><b>${fmt(r[C.salas] || 0)}</b><span>salas em uso</span></div>
       </div>
-      <div class="box"><h3>Alunos por etapa</h3><div class="dl">
+      <div class="box"><h3>Alunos por etapa</h3>${r[C.mat_total] ? `<div class="dl">
         ${nz(C.mat_creche, "Creche")}${nz(C.mat_pre, "Pré-escola")}${nz(C.mat_fund_ai, "Fundamental, anos iniciais (1º ao 5º)")}${nz(C.mat_fund_af, "Fundamental, anos finais (6º ao 9º)")}
         ${nz(C.mat_medio, "Ensino médio")}${nz(C.mat_profissional, "Educação profissional")}${nz(C.mat_eja, "EJA (jovens e adultos)")}
         ${nz(C.mat_especial, "Educação especial (deficiência, autismo, altas habilidades)")}${nz(C.mat_integral, "Em tempo integral")}
-        ${nz(C.mat_moram_zona_rural, "Moram na zona rural")}${nz(C.mat_transporte_publico, "Usam transporte escolar público")}</div></div>
+        ${nz(C.mat_moram_zona_rural, "Moram na zona rural")}${nz(C.mat_transporte_publico, "Usam transporte escolar público")}</div>` : `<p class="src">Sem alunos matriculados ${ativa(r) ? "na data do Censo" : "(escola paralisada)"}.</p>`}</div>
       <div class="box"><h3>Professores <small>(na data do Censo)</small></h3><div class="dl">
         ${n(C.docentes, "Professores")}${n(C.docentes_superior, "Com curso superior")}${n(C.docentes_licenciatura, "Com licenciatura")}
         ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}</div></div>
@@ -715,20 +750,21 @@ function abrirFicha(cod, {semHistorico} = {}){
     </div></div>`;
   document.body.append(fundo);
   fichaAberta = cod;
-  if (!semHistorico) history.pushState({ficha: cod}, "", location.hash);
+  if (!semHistorico) history.pushState({ficha: cod}, "", "#escola-" + cod);
   fundo.querySelector(".fechar").focus();
 }
 function fecharFicha(semVoltar){
   const f = $("#ficha"); if (!f) return;
   f.remove(); const cod = fichaAberta; fichaAberta = null;
   if (!semVoltar && history.state?.ficha) history.back();
+  if (/^#escola-/.test(location.hash)) history.replaceState(history.state, "", "#escolas");
   const card = document.querySelector(`[data-esc="${cod}"]`); if (card && !semVoltar) card.focus();
 }
 
 /* ===================== eventos ===================== */
 function ligar(){
   document.querySelectorAll(".views [data-view], .tabbar [data-view]").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
-  addEventListener("hashchange", () => setView(location.hash.slice(1), {semHash: true}));
+  addEventListener("hashchange", () => { const h = location.hash.slice(1); if (/^escola-/.test(h) && fichaAberta) return; setView(h, {semHash: true}); });
   addEventListener("popstate", () => { if (fichaAberta && !history.state?.ficha) fecharFicha(true); });
   $("#uf").addEventListener("change", e => trocarUF(+e.target.value, null));
   $("#todo-estado").addEventListener("click", () => { S.mun = null; $("#cidade").value = ""; S.f.lim = 60; salvarLocal(); renderTudo(); });
@@ -754,9 +790,16 @@ function ligar(){
     if (t.closest("#e-csv")){ exportarCSV(); return; }
     const tm = t.closest("tr[data-mun]"); if (tm){ escolherMun(+tm.dataset.mun); $("#v-escolas").scrollTop = 0; return; }
     if (t.closest("[data-fechar]") || t.classList.contains("ficha-fundo")){ fecharFicha(); return; }
+    const cp = t.closest("[data-copiar]"); if (cp){ copiarLink(cp.dataset.copiar); return; }
   });
   document.addEventListener("input", e => {
     if (e.target.id === "e-q"){ S.f.q = e.target.value; S.f.lim = 60; renderLista(); }
+    if (e.target.id === "e-cod"){
+      const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+      if (v !== e.target.value) e.target.value = v;
+      S.f.cod = v; S.f.lim = 60; renderLista();
+      if (v.length === 8) buscarCodigo(+v);
+    }
   });
   document.addEventListener("change", e => {
     if (e.target.id === "e-paral"){ S.f.paral = e.target.checked; S.f.lim = 60; renderLista(); }
@@ -780,8 +823,11 @@ async function iniciar(){
   preencherUFs();
   const salvo = store.get("local");
   const ini = salvo && UFS[salvo.uf] && META.ufs.includes(salvo.uf) ? salvo : PADRAO;
-  setView(location.hash.slice(1) || "painel", {semHash: !location.hash});
+  const h = location.hash.slice(1);
+  const link = /^escola-\d{8}$/.test(h);
+  if (!link) setView(h || "painel", {semHash: !location.hash});
   await trocarUF(ini.uf, ini.mun && MUN_POR_ID.has(ini.mun) ? ini.mun : null);
+  if (link) setView(h);
 }
 iniciar();
 
