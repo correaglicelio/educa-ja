@@ -1,0 +1,46 @@
+# Educa Já: roda UMA coleta na hora (para testar um módulo novo sem esperar a rotina toda).
+# Aba Actions > "Coletar um módulo" > Run workflow > escolha o módulo.
+name: Coletar um módulo
+
+on:
+  workflow_dispatch:
+    inputs:
+      modulo:
+        description: "Coleta"
+        type: choice
+        options: [escolas, ideb, municipios, testar_fontes]
+        default: ideb
+      uf:
+        description: "Estados (MT, MT,GO ou todas)"
+        default: "todas"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: educa-ja-coleta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Coleta
+        run: |
+          if [ "${{ inputs.modulo }}" = "testar_fontes" ]; then python scripts/testar_fontes.py;
+          elif [ "${{ inputs.modulo }}" = "municipios" ]; then python scripts/coletar_municipios.py;
+          else python scripts/coletar_${{ inputs.modulo }}.py --uf "${{ inputs.uf }}"; fi
+      - name: Salvar dados no repositório
+        run: |
+          git config user.name "educa-ja-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --cached --quiet; then echo "Nada mudou."; exit 0; fi
+          git commit -m "Dados: ${{ inputs.modulo }} ($(date -u +%d/%m/%Y))"
+          git pull --rebase --strategy-option=theirs origin main || true
+          git push

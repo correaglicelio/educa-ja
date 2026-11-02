@@ -46,6 +46,11 @@ jobs:
         run: python scripts/coletar_escolas.py --uf todas
         continue-on-error: true
         timeout-minutes: 90
+      - name: Ideb e Saeb (planilhas do INEP; só muda a cada 2 anos)
+        id: ideb
+        run: python scripts/coletar_ideb.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 60
 
       - name: Resumo da coleta
         if: always()
@@ -57,6 +62,7 @@ jobs:
             echo "| Teste das fontes | ${{ steps.fontes.outcome }} |"
             echo "| Municípios | ${{ steps.municipios.outcome }} |"
             echo "| Escolas | ${{ steps.escolas.outcome }} |"
+            echo "| Ideb e Saeb | ${{ steps.ideb.outcome }} |"
             echo ""
             echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
           } >> "$GITHUB_STEP_SUMMARY"
