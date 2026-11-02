@@ -269,6 +269,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 [data-view="escolas"], [data-ir="escolas"], #v-escolas {--mc:var(--m-escolas)}
 [data-view="aprendizagem"], [data-ir="aprendizagem"], #v-aprendizagem {--mc:var(--m-aprend)}
 [data-view="gastos"], [data-ir="gastos"], #v-gastos {--mc:var(--m-gastos)}
+[data-view="fluxo"], [data-ir="fluxo"], #v-fluxo {--mc:var(--m-fluxo)}
 .mod-fluxo{--mc:var(--m-fluxo)} .mod-merenda{--mc:var(--m-merenda)} .mod-pdde{--mc:var(--m-pdde)} .mod-transp{--mc:var(--m-transp)}
 .views button{--c1:var(--mc, var(--accent)); --c2:color-mix(in srgb, var(--mc, var(--accent)) 38%, var(--surface))}
 .views button[aria-pressed="true"]{background:color-mix(in srgb, var(--mc, var(--accent)) 13%, var(--surface)); color:var(--ink); box-shadow:inset 3px 0 0 var(--mc, var(--lapis))}
@@ -342,6 +343,15 @@ td.ideb-baixo{color:var(--bad); font-weight:700}
 .legenda-m span{display:inline-flex; align-items:center; gap:6px}
 .legenda-m i{width:3px; height:14px; border-radius:2px; background:var(--ink)} .legenda-m i.md{background:var(--r-est)}
 .medidores{display:grid; gap:18px}
+/* fluxo: barra empilhada aprovação / reprovação / abandono */
+.rend{display:grid; gap:14px}
+.rend-l .rot{display:flex; justify-content:space-between; gap:10px; font-size:14px; margin-bottom:5px}
+.rend-l .rot b{font-weight:700}
+.rend-b{display:flex; height:22px; border-radius:6px; overflow:hidden; background:var(--sunk)}
+.rend-b i{display:block; height:100%} .rend-b .ap{background:var(--ok)} .rend-b .rp{background:var(--warn)} .rend-b .ab{background:var(--bad)}
+.rend-n{display:flex; gap:14px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:4px}
+.rend-n b{color:var(--ink); font-variant-numeric:tabular-nums}
+.rend-n i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:0}
 .posicoes{display:grid; grid-template-columns:1fr 1fr; gap:12px}
 .pos-item{border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:grid; gap:6px; align-content:start}
 .pos-item.destaque{border-color:color-mix(in srgb, var(--mc, var(--accent)) 45%, var(--line)); background:color-mix(in srgb, var(--mc, var(--accent)) 7%, var(--surface))}
@@ -428,11 +438,11 @@ td.ruim{color:var(--bad); font-weight:700}
       <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg><span>Escolas</span></button>
       <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg><span>Aprendizagem</span></button>
       <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg><span>Gastos</span></button>
+      <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg><span>Fluxo escolar</span></button>
     </nav>
     <div>
       <p class="menu-tit">Em breve</p>
       <div class="views" aria-label="Seções em construção">
-        <span class="breve mod-fluxo"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo escolar</span>
         <span class="breve mod-merenda"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</span>
         <span class="breve mod-pdde"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>Dinheiro na escola</span>
         <span class="breve mod-transp"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg>Transporte</span>
@@ -457,13 +467,15 @@ td.ruim{color:var(--bad); font-weight:700}
     <div class="view" id="v-escolas" hidden><div class="inner" id="escolas"></div></div>
     <div class="view" id="v-aprendizagem" hidden><div class="inner" id="aprendizagem"></div></div>
     <div class="view" id="v-gastos" hidden><div class="inner" id="gastos"></div></div>
+    <div class="view" id="v-fluxo" hidden><div class="inner" id="fluxo"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:4">
+  <nav class="tabbar" aria-label="Navegação" style="--n:5">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
     <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprender</button>
     <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</button>
+    <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo</button>
   </nav>
 </div>
 
@@ -481,7 +493,7 @@ const store = {
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
 const PADRAO = {uf: 51, mun: 5106752};
-const VIEWS = ["painel", "escolas", "aprendizagem", "gastos"];
+const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
@@ -519,11 +531,12 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null;
+let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
+const FLUXO = new Map();
 const ENEM = new Map();
 const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", gOrd: "nome", etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -576,6 +589,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarFluxo(uf){
+  if (!FL_META || !FL_META.ufs.includes(uf)) return null;
+  if (!FLUXO.has(uf)) FLUXO.set(uf, getJSON(`data/fluxo/${uf}.json`).catch(e => { FLUXO.delete(uf); throw e; }));
+  return FLUXO.get(uf);
+}
 async function carregarEnem(uf){
   if (!ENEM_META || !ENEM_META.ufs.includes(uf)) return null;
   if (!ENEM.has(uf)) ENEM.set(uf, getJSON(`data/enem/${uf}.json`).catch(e => { ENEM.delete(uf); throw e; }));
@@ -603,7 +621,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null)]); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null)]); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -657,7 +675,7 @@ function setView(v, {semHash} = {}){
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -700,6 +718,13 @@ const DICAS = {
   enareas: "As 4 provas objetivas são corrigidas pela <b>TRI</b> (Teoria de Resposta ao Item): a nota depende de quais questões o aluno acertou, não só de quantas. Não há nota máxima fixa; a média nacional fica perto de 500.",
   redacao: "A redação vale de 0 a 1.000: cinco competências de até 200 pontos cada (norma culta, tema, argumentação, coesão e proposta de intervenção).",
   enpart: "Alunos do último ano que foram aos dois dias de prova, de todos os que se inscreveram informando a escola. Faltar muito derruba o número de participantes e pode mudar a média.",
+  rendimento: "Situação dos alunos no fim do ano letivo: <b>aprovados</b>, <b>reprovados</b> ou que <b>abandonaram</b> a escola. As três somam 100%.",
+  reprovacao: "Alunos que terminaram o ano sem conseguir passar de série.",
+  abandono: "Alunos que deixaram de frequentar a escola durante o ano e não voltaram. Diferente de evasão: o aluno pode se matricular de novo no ano seguinte. Acima de 5% merece atenção.",
+  distorcao: "Percentual de alunos com <b>2 anos ou mais de atraso</b> em relação à idade certa para a série (por exemplo, um aluno de 13 anos no 6º ano). Costuma vir de reprovações e abandonos acumulados.",
+  atu: "Média de alunos por turma, segundo o Censo Escolar. Turmas muito cheias dificultam o acompanhamento de cada aluno.",
+  had: "Média de horas de aula por dia. Escolas de tempo integral têm 7 horas ou mais.",
+  anoletivo: "As taxas de rendimento são do ano letivo indicado e saem em meados do ano seguinte, quando as escolas informam ao INEP a situação final de cada aluno.",
   ideb: "<b>Ideb</b> é o Índice de Desenvolvimento da Educação Básica, do INEP, de 0 a 10. Junta a nota da prova Saeb (português e matemática) com a taxa de aprovação. Sai a cada 2 anos.",
   saeb: "<b>Saeb</b> é a prova de português e matemática do INEP, aplicada no 5º e no 9º ano do fundamental e no fim do ensino médio. Quanto maior a nota, melhor.",
   aprovacao: "Percentual de alunos aprovados no ano, segundo o Censo Escolar. Entra no cálculo do Ideb: se muitos reprovam ou abandonam, o Ideb cai mesmo com nota boa.",
@@ -769,7 +794,7 @@ function renderPainel(){
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
       : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
     [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
-  const breve = [["d-fluxo", "Fluxo escolar", "Aprovação, reprovação, abandono e distorção idade-série."], ["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
+  const breve = [["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
     ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
@@ -784,6 +809,7 @@ function renderPainel(){
       </button>
       ${cardAprendizagem()}
       ${cardGastos()}
+      ${cardFluxo()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve mod-${({"d-fluxo": "fluxo", "d-merenda": "merenda", "d-pdde": "pdde", "d-onibus": "transp"})[ic]}" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -1245,6 +1271,141 @@ async function exportarCSVEnem(){
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-enem-${semAcento(lugar()).replace(/\W+/g, "-")}-${ENEM_META.ano}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
+
+/* ===================== fluxo escolar ===================== */
+const FL_ET = ["Anos iniciais", "Anos finais", "Ensino médio"];
+const FL_ET_SUB = ["1º ao 5º ano", "6º ao 9º ano", "1ª à 3ª série"];
+const FL_REDES = ["Total", "Pública", "Municipal", "Estadual", "Federal", "Privada"];
+const fP = v => v == null ? "–" : f1(v) + "%";
+function flMun(mun, rede){ return S.fluxo?.m?.[mun]?.[rede]; }
+function flRef(chave, rede){ return FL_BR?.uf?.[chave]?.[rede]; }
+// r = [ap AI, AF, EM, rep AI, AF, EM, aband AI, AF, EM]
+const flR = (reg, k, et) => { const r = reg?.r?.[k]; return r ? {ap: r[et], rp: r[3 + et], ab: r[6 + et]} : null; };
+function flRedesDisp(mun){ const d = mun ? S.fluxo?.m?.[mun] : FL_BR?.uf?.[S.uf]; return FL_REDES.filter(r => d?.[r]); }
+function periodoFluxo(){ const a = FL_META.anos; return `Rendimento: ano letivo ${a.rend} (e ${a.rend - 1}) · distorção, alunos por turma e horas-aula: Censo Escolar ${a.tdi}`; }
+function fonteFluxo(){ return `Fonte: ${esc(FL_META.fonte)}. ${esc(FL_META.aviso)} Dados atualizados em ${dataBR(FL_META.gerado_em)}.`; }
+function cabecalhoF(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function barraRend(rot, x, ref){
+  if (!x || x.ap == null) return "";
+  return `<div class="rend-l"><div class="rot"><span>${rot}</span><b>${fP(x.ap)} aprovados</b></div>
+    <div class="rend-b" role="img" aria-label="Aprovação ${fP(x.ap)}, reprovação ${fP(x.rp)}, abandono ${fP(x.ab)}"><i class="ap" style="width:${x.ap}%"></i><i class="rp" style="width:${x.rp || 0}%"></i><i class="ab" style="width:${x.ab || 0}%"></i></div>
+    <div class="rend-n"><span><i style="background:var(--warn)"></i>${T("reprovacao", "reprovação")} <b>${fP(x.rp)}</b></span><span><i style="background:var(--bad)"></i>${T("abandono", "abandono")} <b>${fP(x.ab)}</b></span>${ref ? `<span>${ref}</span>` : ""}</div></div>`;
+}
+function seletorRede(mun){
+  const redes = flRedesDisp(mun); if (!redes.includes(S.flRede)) S.flRede = redes[0] || "Total";
+  return `<div class="seletores"><div><span class="rot">Rede</span><span class="escopo">${redes.map(r => `<button type="button" data-flrede="${r}" aria-pressed="${r === S.flRede}">${r === "Total" ? "Todas" : r}</button>`).join("")}</span></div></div>`;
+}
+function renderFluxo(){
+  const el = $("#fluxo"); if (!el) return;
+  const titulo = "Fluxo escolar · " + esc(lugar());
+  if (!FL_META){ el.innerHTML = cabecalhoF(titulo, "INEP") + `<div class="aviso">${ICO.info}<div>Os dados do fluxo escolar ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.fluxo){ el.innerHTML = cabecalhoF(titulo, periodoFluxo()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do fluxo escolar de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const acoes = `<button class="btn" id="fl-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  const ano = FL_META.anos.rend, ant = ano - 1;
+  const reg = S.mun ? flMun(S.mun, flRedesDisp(S.mun).includes(S.flRede) ? S.flRede : flRedesDisp(S.mun)[0]) : flRef(S.uf, S.flRede || "Total");
+  const sel = seletorRede(S.mun);
+  const rede = S.flRede;
+  const regUF = flRef(S.uf, rede) || flRef(S.uf, "Total"), regBR = flRef("br", rede) || flRef("br", "Total");
+  if (!reg){ el.innerHTML = cabecalhoF(titulo, periodoFluxo()) + sel + `<div class="aviso">${ICO.info}<div>Sem dados para esta rede.</div></div>`; return; }
+  const ets = [0, 1, 2].filter(et => flR(reg, 1, et)?.ap != null || reg.t?.[et] != null);
+  const cmpTxt = (et) => { const u = flR(S.mun ? regUF : regBR, 1, et); return u ? `${S.mun ? esc(siglaUF(S.uf)) : "Brasil"}: ${fP(u.ap)} aprovados, ${fP(u.ab)} abandono` : ""; };
+  const linhaRef = (lbl, arr, idx, refUF, refBR, fmtf = fP) => [lbl, `<b>${fmtf(arr?.[idx])}</b>`, fmtf(refUF?.[idx]), fmtf(refBR?.[idx])];
+  el.innerHTML = cabecalhoF(titulo, periodoFluxo(), acoes) + sel + `
+    ${S.mun ? posicaoFluxo() : estadoFluxoKpis(reg)}
+    <div class="box"><h3>${T("rendimento", "Rendimento")} · ${T("anoletivo", "ano letivo " + ano)} <small>${rede === "Total" ? "todas as redes" : "rede " + rede.toLowerCase()}</small></h3>
+      <div class="rend">${ets.map(et => barraRend(`${FL_ET[et]} <small style="color:var(--muted)">(${FL_ET_SUB[et]})</small>`, flR(reg, 1, et), cmpTxt(et))).join("") || `<p class="src">Sem taxas de rendimento de ${ano}.</p>`}</div></div>
+    <div class="box"><h3>${T("anoletivo", "Ano letivo " + ant)} <small>para comparar</small></h3>
+      ${rsTab([["Etapa"], ["Aprov.", "n"], ["Reprov.", "n"], ["Aband.", "n"], [`Até ${ano}`, "n"]],
+        ets.map(et => { const a = flR(reg, 0, et), b = flR(reg, 1, et); return [FL_ET[et], `<b>${fP(a?.ap)}</b>`, fP(a?.rp), fP(a?.ab), dif(b?.ap, a?.ap) || "–"]; }))}
+      <p class="src" style="margin-top:8px">"Até ${ano}": quanto a aprovação subiu (▲) ou caiu (▼) de ${ant} para ${ano}, em pontos percentuais.</p></div>
+    <div class="grid2">
+      <div class="box"><h3>${T("distorcao", "Distorção idade-série")} <small>Censo ${FL_META.anos.tdi} · alunos 2 anos ou mais atrasados</small></h3>
+        ${rsTab([["Etapa"], [S.mun ? "Cidade" : esc(siglaUF(S.uf)), "n"], [S.mun ? esc(siglaUF(S.uf)) : "Brasil", "n"], [S.mun ? "Brasil" : "", "n"]],
+          ets.map(et => { const v = reg.t?.[et], u = (S.mun ? regUF : regBR)?.t?.[et];
+            return [FL_ET[et], `<b class="${v != null && u != null && v > u + 5 ? "bad" : ""}">${fP(v)}</b>`, fP(u), S.mun ? fP(regBR?.t?.[et]) : ""]; }))}
+        ${ets.includes(1) && reg.t?.[1] != null ? `<p style="margin:12px 0 0;font-size:14px">Nos anos finais, <b>${Math.round(reg.t[1] / 10)} em cada 10</b> alunos estão 2 anos ou mais atrasados.</p>` : ""}</div>
+      <div class="box"><h3>Turmas e jornada <small>Censo ${FL_META.anos.atu}</small></h3>
+        ${rsTab([["Etapa"], [T("atu", "Alunos/turma"), "n"], [T("had", "Horas/dia"), "n"]],
+          [["Educação infantil", 0], ...ets.map(et => [FL_ET[et], et + 1])].map(([n, i]) => [n, `<b>${f1(reg.a?.[i])}</b>${S.mun ? `<br><span class="fraco" style="font-size:12px">${esc(siglaUF(S.uf))} ${f1(regUF?.a?.[i])}</span>` : ""}`, `<b>${f1(reg.h?.[i])}</b>${S.mun ? `<br><span class="fraco" style="font-size:12px">${esc(siglaUF(S.uf))} ${f1(regUF?.h?.[i])}</span>` : ""}`])
+          .filter(l => !l[1].startsWith("<b>–")))}</div>
+    </div>
+    ${S.mun ? tabelaEscolasFluxo() : tabelaMunFluxo()}
+    <p class="src">${fonteFluxo()}</p>`;
+}
+function posicaoFluxo(){
+  // posição pela aprovação no fundamental (anos finais, onde mais se reprova), todas as redes
+  const ano = FL_META.anos.rend, et = 1;
+  const lista = k => Object.entries(S.fluxo.m).map(([m, d]) => ({m: +m, v: flR(d.Total, k, et)?.ap})).filter(x => x.v != null).sort((a, b) => b.v - a.v);
+  const l1 = lista(1), l0 = lista(0);
+  const me = flR(flMun(S.mun, "Total"), 1, et)?.ap, ma = flR(flMun(S.mun, "Total"), 0, et)?.ap;
+  const p1 = me == null ? null : l1.filter(x => x.v > me).length + 1, p0 = ma == null ? null : l0.filter(x => x.v > ma).length + 1;
+  if (!p1 && !p0) return "";
+  return `<div class="box"><h3>Posição em ${esc(nomeUF(S.uf))} <small>${T("aprovacao", "aprovação")} nos anos finais (6º ao 9º ano), todas as redes, da maior para a menor</small></h3>
+    <div class="posicoes">
+      <div class="pos-item destaque"><div class="pos-tit">${T("anoletivo", "Ano letivo " + ano)}</div>${p1 ? `<div class="rank"><b>${p1}º</b><span>de ${fmt(l1.length)} cidades</span></div><p class="pos-sub">${esc(nomeMun(S.mun))}: <b>${fP(me)}</b> aprovados · ${esc(siglaUF(S.uf))}: ${fP(flR(flRef(S.uf, "Total"), 1, et)?.ap)}</p>` : `<p class="src">Sem dado.</p>`}</div>
+      <div class="pos-item"><div class="pos-tit">Ano letivo ${ano - 1}</div>${p0 ? `<div class="rank"><b>${p0}º</b><span>de ${fmt(l0.length)} cidades</span></div><p class="pos-sub">${esc(nomeMun(S.mun))}: <b>${fP(ma)}</b> aprovados</p>` : `<p class="src">Sem dado.</p>`}</div>
+    </div></div>`;
+}
+function estadoFluxoKpis(reg){
+  const br = flRef("br", S.flRede) || flRef("br", "Total");
+  return `<div class="kpis">${[0, 1, 2].map(et => { const x = flR(reg, 1, et), b = flR(br, 1, et); return x ? `<div class="kpi"><div class="k">${T("aprovacao", "Aprovação")} · ${FL_ET[et].toLowerCase()}</div><div class="v">${fP(x.ap)}</div><div class="s">abandono ${fP(x.ab)} · Brasil: ${fP(b?.ap)}</div></div>` : ""; }).join("")}
+    <div class="kpi"><div class="k">${T("distorcao", "Distorção")} · anos finais</div><div class="v">${fP(reg.t?.[1])}</div><div class="s">Brasil: ${fP(br?.t?.[1])}</div></div></div>`;
+}
+function seletorEtapaFl(){
+  return `<div class="chips" style="margin-bottom:10px"><span class="rot">Etapa</span>${FL_ET.map((e, i) => `<button type="button" class="chip" data-flet="${i}" aria-pressed="${S.flEt === i}"><i></i>${e}</button>`).join("")}</div>`;
+}
+function tabelaEscolasFluxo(){
+  const et = S.flEt, ano = FL_META.anos.rend;
+  const lin = Object.entries(S.fluxo.e || {}).map(([cod, d]) => ({cod: +cod, d, r: S.rows.find(x => x[C.codigo] === +cod)}))
+    .filter(x => x.r && x.r[C.municipio] === S.mun && (x.d.r?.[et] != null || x.d.t?.[et] != null))
+    .sort((a, b) => (a.d.r?.[et] ?? 101) - (b.d.r?.[et] ?? 101));
+  return `<div class="box"><h3>Escolas de ${esc(nomeMun(S.mun))} <small>da menor para a maior aprovação · toque para abrir a ficha</small></h3>${seletorEtapaFl()}
+    ${lin.length ? `<div class="tablewrap"><table><thead><tr><th>Escola</th><th>Rede</th><th class="n">Aprov. ${ano}</th><th class="n">Reprov.</th><th class="n">Aband.</th><th class="n">${T("distorcao", "Distorção")}</th><th class="n">Aprov. ${ano - 1}</th></tr></thead>
+    <tbody>${lin.map(x => `<tr class="click" data-esc="${x.cod}"><td>${esc(tituloEscola(x.r[C.nome]))}</td><td>${REDE[x.r[C.rede]]}</td><td class="n"><b>${fP(x.d.r?.[et])}</b></td><td class="n">${fP(x.d.r?.[3 + et])}</td>
+      <td class="n" style="${(x.d.r?.[6 + et] || 0) >= 5 ? "color:var(--bad);font-weight:700" : ""}">${fP(x.d.r?.[6 + et])}</td><td class="n">${fP(x.d.t?.[et])}</td><td class="n">${fP(x.d.ra?.[et])}</td></tr>`).join("")}</tbody></table></div>`
+    : `<p class="src">Nenhuma escola de ${esc(nomeMun(S.mun))} com dados de ${FL_ET[et].toLowerCase()}.</p>`}</div>`;
+}
+function tabelaMunFluxo(){
+  const et = S.flEt, ano = FL_META.anos.rend, rede = S.flRede;
+  const lin = Object.entries(S.fluxo.m).map(([m, d]) => ({m: +m, x: flR(d[rede], 1, et), t: d[rede]?.t?.[et], a: flR(d[rede], 0, et)})).filter(z => z.x?.ap != null);
+  const ord = {nome: (a, b) => semAcento(nomeMun(a.m)).localeCompare(semAcento(nomeMun(b.m))), ap: (a, b) => a.x.ap - b.x.ap, ab: (a, b) => (b.x.ab ?? -1) - (a.x.ab ?? -1), tdi: (a, b) => (b.t ?? -1) - (a.t ?? -1)}[S.flOrd] || (() => 0);
+  lin.sort(ord);
+  return `<div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>${rede === "Total" ? "todas as redes" : "rede " + rede.toLowerCase()} · toque para abrir</small></h3>${seletorEtapaFl()}
+    <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["nome", "Nome"], ["ap", "Menor aprovação"], ["ab", "Maior abandono"], ["tdi", "Maior distorção"]].map(([k, t]) => `<button type="button" class="chip" data-flord="${k}" aria-pressed="${S.flOrd === k}"><i></i>${t}</button>`).join("")}</div>
+    <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">Aprov. ${ano}</th><th class="n">Reprov.</th><th class="n">Aband.</th><th class="n">Distorção</th><th class="n">Aprov. ${ano - 1}</th></tr></thead>
+    <tbody>${lin.map(z => `<tr class="click" data-mun="${z.m}"><td>${esc(nomeMun(z.m))}</td><td class="n"><b>${fP(z.x.ap)}</b></td><td class="n">${fP(z.x.rp)}</td><td class="n" style="${(z.x.ab || 0) >= 5 ? "color:var(--bad);font-weight:700" : ""}">${fP(z.x.ab)}</td><td class="n">${fP(z.t)}</td><td class="n">${fP(z.a?.ap)}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function cardFluxo(){
+  if (!FL_META || !S.fluxo) return "";
+  const reg = S.mun ? flMun(S.mun, "Total") : flRef(S.uf, "Total"), ref = S.mun ? flRef(S.uf, "Total") : flRef("br", "Total");
+  if (!reg) return "";
+  const ano = FL_META.anos.rend;
+  const ets = [0, 1, 2].filter(et => flR(reg, 1, et)?.ap != null);
+  const abAlto = ets.some(et => (flR(reg, 1, et)?.ab || 0) >= 5), tdiAlta = (reg.t?.[1] || 0) >= 30;
+  const big = reg.t?.[1];
+  return `<button type="button" class="rs-card ${abAlto || tdiAlta ? "rs-atencao" : ""}" data-ir="fluxo">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg></span><h3>Fluxo escolar</h3></header>
+    ${big != null ? `<div class="rs-big ${tdiAlta ? "atencao" : ""}">${fP(big)}<small>dos alunos dos anos finais com 2 anos ou mais de atraso (${T("distorcao", "distorção idade-série")}) · ${S.mun ? esc(siglaUF(S.uf)) : "Brasil"}: ${fP(ref?.t?.[1])}</small></div>` : ""}
+    ${rsTab([[T("anoletivo", "Ano letivo " + ano)], ["Aprovação", "n"], ["Abandono", "n"]],
+      ets.map(et => { const x = flR(reg, 1, et); return [FL_ET[et], `<b class="ok">${fP(x.ap)}</b>`, `<b class="${(x.ab || 0) >= 5 ? "bad" : ""}">${fP(x.ab)}</b>`]; }))}
+    <span class="rs-link">Ver fluxo escolar →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>Rendimento: ano letivo ${ano} · distorção: Censo ${FL_META.anos.tdi}</span></span></button>`;
+}
+async function exportarCSVFluxo(){
+  if (!FL_META || !S.fluxo) return toast("Sem dados para exportar");
+  const n = v => v == null ? "" : String(v).replace(".", ",");
+  const a = FL_META.anos.rend, cab = ["Tipo", "Código", "Nome", "Rede", "Etapa", `Aprovação ${a - 1}`, `Reprovação ${a - 1}`, `Abandono ${a - 1}`, `Aprovação ${a}`, `Reprovação ${a}`, `Abandono ${a}`, "Distorção idade-série", "Alunos por turma", "Horas-aula por dia"];
+  const linhas = [];
+  const add = (tipo, cod, nome, rede, d, ra, r) => [0, 1, 2].forEach(et => { if (r?.[et] == null && d.t?.[et] == null) return;
+    linhas.push([tipo, cod, nome, rede, FL_ET[et], n(ra?.[et]), n(ra?.[3 + et]), n(ra?.[6 + et]), n(r?.[et]), n(r?.[3 + et]), n(r?.[6 + et]), n(d.t?.[et]), n(d.a?.[et + 1]), n(d.h?.[et + 1])]); });
+  for (const [m, redes] of Object.entries(S.fluxo.m)) if (!S.mun || +m === S.mun) for (const [rede, d] of Object.entries(redes)) add("Município", m, nomeMun(+m), rede, d, d.r?.[0], d.r?.[1]);
+  if (S.mun) for (const [cod, d] of Object.entries(S.fluxo.e || {})){ const r = S.rows.find(x => x[C.codigo] === +cod); if (r && r[C.municipio] === S.mun) add("Escola", cod, tituloEscola(r[C.nome]), REDE[r[C.rede]], d, d.ra, d.r); }
+  const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  await salvar(`educa-ja-fluxo-${semAcento(lugar()).replace(/\W+/g, "-")}-${a}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
+}
 function cabecalhoA(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
     <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
@@ -1635,6 +1796,10 @@ function ligar(){
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
     if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
     const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
+    const fr = t.closest("[data-flrede]"); if (fr){ S.flRede = fr.dataset.flrede; renderFluxo(); return; }
+    const fe = t.closest("[data-flet]"); if (fe){ S.flEt = +fe.dataset.flet; renderFluxo(); return; }
+    const fo = t.closest("[data-flord]"); if (fo){ S.flOrd = fo.dataset.flord; renderFluxo(); return; }
+    if (t.closest("#fl-csv")){ exportarCSVFluxo(); return; }
     const at = t.closest("[data-atab]"); if (at){ S.aTab = at.dataset.atab; renderAprendizagem(); renderPainel(); return; }
     const eo = t.closest("[data-enord]"); if (eo){ S.enOrd = eo.dataset.enord; renderAprendizagem(); return; }
     if (t.closest("#en-csv")){ exportarCSVEnem(); return; }
@@ -1671,6 +1836,7 @@ async function iniciar(){
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
+    [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
     META = meta; UFS = mj.ufs;
