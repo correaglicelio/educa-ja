@@ -8,7 +8,7 @@ on:
       modulo:
         description: "Coleta"
         type: choice
-        options: [escolas, ideb, gastos, enem, fluxo, merenda, pdde, transporte, transferencias, municipios, testar_fontes, sondar]
+        options: [escolas, ideb, gastos, enem, fluxo, merenda, pdde, transporte, locais, transferencias, municipios, testar_fontes, sondar]
         default: ideb
       uf:
         description: "Estados (MT, MT,GO ou todas)"

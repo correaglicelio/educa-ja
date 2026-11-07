@@ -81,6 +81,11 @@ jobs:
         run: python scripts/coletar_transporte.py --uf todas
         continue-on-error: true
         timeout-minutes: 20
+      - name: Endereço e localização das escolas (Catálogo do INEP)
+        id: locais
+        run: python scripts/coletar_locais.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 30
       - name: ENEM por escola (INEP; só baixa quando sai edição nova)
         id: enem
         run: |
@@ -106,6 +111,7 @@ jobs:
             echo "| Merenda (PNAE) | ${{ steps.merenda.outcome }} |"
             echo "| PDDE | ${{ steps.pdde.outcome }} |"
             echo "| Transporte | ${{ steps.transporte.outcome }} |"
+            echo "| Localização das escolas | ${{ steps.locais.outcome }} |"
             echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
             echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
