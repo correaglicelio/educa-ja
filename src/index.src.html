@@ -270,6 +270,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 [data-view="aprendizagem"], [data-ir="aprendizagem"], #v-aprendizagem {--mc:var(--m-aprend)}
 [data-view="gastos"], [data-ir="gastos"], #v-gastos {--mc:var(--m-gastos)}
 [data-view="fluxo"], [data-ir="fluxo"], #v-fluxo {--mc:var(--m-fluxo)}
+[data-view="merenda"], [data-ir="merenda"], #v-merenda {--mc:var(--m-merenda)}
 .mod-fluxo{--mc:var(--m-fluxo)} .mod-merenda{--mc:var(--m-merenda)} .mod-pdde{--mc:var(--m-pdde)} .mod-transp{--mc:var(--m-transp)}
 .views button{--c1:var(--mc, var(--accent)); --c2:color-mix(in srgb, var(--mc, var(--accent)) 38%, var(--surface))}
 .views button[aria-pressed="true"]{background:color-mix(in srgb, var(--mc, var(--accent)) 13%, var(--surface)); color:var(--ink); box-shadow:inset 3px 0 0 var(--mc, var(--lapis))}
@@ -439,11 +440,11 @@ td.ruim{color:var(--bad); font-weight:700}
       <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg><span>Aprendizagem</span></button>
       <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg><span>Gastos</span></button>
       <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg><span>Fluxo escolar</span></button>
+      <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg><span>Merenda</span></button>
     </nav>
     <div>
       <p class="menu-tit">Em breve</p>
       <div class="views" aria-label="Seções em construção">
-        <span class="breve mod-merenda"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</span>
         <span class="breve mod-pdde"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>Dinheiro na escola</span>
         <span class="breve mod-transp"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg>Transporte</span>
       </div>
@@ -468,14 +469,16 @@ td.ruim{color:var(--bad); font-weight:700}
     <div class="view" id="v-aprendizagem" hidden><div class="inner" id="aprendizagem"></div></div>
     <div class="view" id="v-gastos" hidden><div class="inner" id="gastos"></div></div>
     <div class="view" id="v-fluxo" hidden><div class="inner" id="fluxo"></div></div>
+    <div class="view" id="v-merenda" hidden><div class="inner" id="merenda"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:5">
+  <nav class="tabbar" aria-label="Navegação" style="--n:6">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
     <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprender</button>
     <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</button>
     <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo</button>
+    <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</button>
   </nav>
 </div>
 
@@ -493,7 +496,7 @@ const store = {
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
 const PADRAO = {uf: 51, mun: 5106752};
-const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo"];
+const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
@@ -531,12 +534,13 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
+let ME_META = null; const MERENDA = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
 const ENEM = new Map();
 const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", gOrd: "nome", etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", meOrd: "nome", gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -589,6 +593,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarMerenda(uf){
+  if (!ME_META || !ME_META.ufs.includes(uf)) return null;
+  if (!MERENDA.has(uf)) MERENDA.set(uf, getJSON(`data/merenda/${uf}.json`).catch(e => { MERENDA.delete(uf); throw e; }));
+  return MERENDA.get(uf);
+}
 async function carregarFluxo(uf){
   if (!FL_META || !FL_META.ufs.includes(uf)) return null;
   if (!FLUXO.has(uf)) FLUXO.set(uf, getJSON(`data/fluxo/${uf}.json`).catch(e => { FLUXO.delete(uf); throw e; }));
@@ -621,7 +630,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null)]); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -675,7 +684,7 @@ function setView(v, {semHash} = {}){
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); renderMerenda(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -718,6 +727,13 @@ const DICAS = {
   enareas: "As 4 provas objetivas são corrigidas pela <b>TRI</b> (Teoria de Resposta ao Item): a nota depende de quais questões o aluno acertou, não só de quantas. Não há nota máxima fixa; a média nacional fica perto de 500.",
   redacao: "A redação vale de 0 a 1.000: cinco competências de até 200 pontos cada (norma culta, tema, argumentação, coesão e proposta de intervenção).",
   enpart: "Alunos do último ano que foram aos dois dias de prova, de todos os que se inscreveram informando a escola. Faltar muito derruba o número de participantes e pode mudar a média.",
+  pnae: "<b>PNAE</b> é o Programa Nacional de Alimentação Escolar, do FNDE. O governo federal manda dinheiro à prefeitura e ao estado para comprar a merenda dos alunos da rede pública, conforme o número de matrículas do Censo Escolar. A prefeitura completa com recursos próprios.",
+  pnaealuno: "Valor recebido no ano dividido pelos alunos atendidos. O FNDE paga por aluno por dia letivo (200 dias), com valores maiores para creche, tempo integral e escolas indígenas e quilombolas.",
+  parcial_me: "O FNDE paga a merenda em 10 parcelas por ano e atualiza os dados abertos de tempos em tempos. Por isso o valor do ano em curso é parcial.",
+  cae: "O <b>Conselho de Alimentação Escolar (CAE)</b> fiscaliza a merenda: compras, qualidade, cardápio e prestação de contas. Pela lei (Lei 11.947/2009), tem 7 titulares: 1 do poder executivo, 2 de trabalhadores da educação ou estudantes, 2 de pais de alunos e 2 da sociedade civil, com mandato de 4 anos.",
+  nutri: "A lei do PNAE exige um <b>nutricionista</b> como responsável técnico pela merenda: ele planeja os cardápios e acompanha a qualidade da alimentação.",
+  rt: "O <b>responsável técnico</b> é o nutricionista que responde pelo programa junto ao FNDE. Sem ele, a prefeitura descumpre a lei do PNAE.",
+  cfn: "Quantidade de nutricionistas recomendada pelo Conselho Federal de Nutricionistas (Resolução CFN 465/2010) conforme o número de alunos: 1 até 500 alunos, 2 até 1.000, 3 até 2.500, 4 até 5.000 e mais 1 a cada 2.500 alunos. É uma referência, não uma exigência do FNDE.",
   rendimento: "Situação dos alunos no fim do ano letivo: <b>aprovados</b>, <b>reprovados</b> ou que <b>abandonaram</b> a escola. As três somam 100%.",
   reprovacao: "Alunos que terminaram o ano sem conseguir passar de série.",
   abandono: "Alunos que deixaram de frequentar a escola durante o ano e não voltaram. Diferente de evasão: o aluno pode se matricular de novo no ano seguinte. Acima de 5% merece atenção.",
@@ -794,8 +810,7 @@ function renderPainel(){
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
       : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
     [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
-  const breve = [["d-merenda", "Merenda", "Repasses do PNAE e situação do Conselho de Alimentação Escolar."],
-    ["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
+  const breve = [["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
     <div class="rs-grid">
@@ -810,6 +825,7 @@ function renderPainel(){
       ${cardAprendizagem()}
       ${cardGastos()}
       ${cardFluxo()}
+      ${cardMerenda()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve mod-${({"d-fluxo": "fluxo", "d-merenda": "merenda", "d-pdde": "pdde", "d-onibus": "transp"})[ic]}" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -1406,6 +1422,128 @@ async function exportarCSVFluxo(){
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-fluxo-${semAcento(lugar()).replace(/\W+/g, "-")}-${a}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
+
+/* ===================== merenda (PNAE) ===================== */
+const ANO_ATUAL = new Date().getFullYear();
+const meReg = mun => mun ? S.merenda?.m?.[mun] : S.merenda?.estado;
+const meAno = (reg, ano) => { const r = reg?.r?.[ano]; return r ? {alunos: r[0], escolas: r[1], valor: r[2], porAluno: r[0] ? r[2] / r[0] : null} : null; };
+const dataCurta = iso => iso ? new Date(iso).toLocaleDateString("pt-BR") : "–";
+const mesAno = iso => iso ? new Date(iso).toLocaleDateString("pt-BR", {month: "long", year: "numeric"}) : "";
+function periodoMerenda(){ return `Repasses de ${ANO_ATUAL} até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)`; }
+function fonteMerenda(){ return `Fonte: ${esc(ME_META.fonte)}. ${esc(ME_META.aviso)} Dados coletados em ${dataBR(ME_META.gerado_em)}.`; }
+function cabecalhoM(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function medianaPorAluno(ano){ return mediana(Object.values(S.merenda.m).map(r => meAno(r, ano)?.porAluno)); }
+function barrasAnos(anos, vals, fmtf, destaque){
+  const W = innerWidth < 600 ? 340 : 640, H = 190, ml = 8, mr = 8, mt = 22, mb = 24;
+  const max = Math.max(1, ...vals.filter(v => v != null)) * 1.12, bw = (W - ml - mr) / anos.length;
+  const y = v => mt + (max - v) * (H - mt - mb) / max;
+  const passo = anos.length > 10 && W < 400 ? 2 : 1;
+  let g = "";
+  vals.forEach((v, i) => { const x = ml + i * bw + bw * .15, w = bw * .7;
+    if (v != null) g += `<rect x="${x}" y="${y(v)}" width="${w}" height="${y(0) - y(v)}" rx="3" fill="${i === destaque ? "var(--mc)" : "color-mix(in srgb, var(--mc) 45%, var(--surface))"}"><title>${anos[i]}: ${fmtf(v)}</title></rect>`;
+    if (v != null && (i % passo === 0 || i === vals.length - 1)) g += `<text class="val" x="${x + w / 2}" y="${y(v) - 5}" text-anchor="middle" style="font-size:${W < 400 ? 9.5 : 11}px">${fmtf(v)}</text>`;
+    if (i % passo === 0 || i === vals.length - 1) g += `<text x="${x + w / 2}" y="${H - 7}" text-anchor="middle" style="font-size:${W < 400 ? 10 : 12}px">${String(anos[i]).slice(W < 400 ? 2 : 0)}</text>`; });
+  return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Valor por ano">${g}</svg>`;
+}
+function renderMerenda(){
+  const el = $("#merenda"); if (!el) return;
+  const titulo = "Merenda escolar · " + esc(lugar());
+  if (!ME_META){ el.innerHTML = cabecalhoM(titulo, "FNDE") + `<div class="aviso">${ICO.info}<div>Os dados da merenda ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.merenda){ el.innerHTML = cabecalhoM(titulo, periodoMerenda()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados da merenda de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const acoes = `<button class="btn" id="me-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.mun){ el.innerHTML = cabecalhoM(titulo, periodoMerenda(), acoes) + estadoMerenda() + `<p class="src">${fonteMerenda()}</p>`; return; }
+  const reg = meReg(S.mun) || {}, a1 = meAno(reg, ANO_ATUAL), a0 = meAno(reg, ANO_ATUAL - 1), am = meAno(reg, ANO_ATUAL - 2);
+  const anos = Object.keys(reg.r || {}).map(Number).filter(a => a < ANO_ATUAL).sort((x, y) => x - y);
+  const med0 = medianaPorAluno(ANO_ATUAL - 1);
+  const queda = a0?.porAluno && am?.porAluno && a0.porAluno < am.porAluno * 0.75 ? Math.round((1 - a0.porAluno / am.porAluno) * 100) : null;
+  // posição no estado: valor recebido por aluno no ano fechado
+  const lista = Object.values(S.merenda.m).map(r => meAno(r, ANO_ATUAL - 1)?.porAluno).filter(v => v != null).sort((x, y) => y - x);
+  const pos = a0?.porAluno != null ? lista.filter(v => v > a0.porAluno).length + 1 : null;
+  el.innerHTML = cabecalhoM(titulo, periodoMerenda(), acoes) + `
+    ${queda ? `<div class="envio atrasado">${ICO.info}<div><b>Repasse por aluno caiu ${queda}%</b> de ${ANO_ATUAL - 2} para ${ANO_ATUAL - 1} (de ${fR$(am.porAluno)} para ${fR$(a0.porAluno)}). O FNDE pode suspender ou atrasar parcelas, por exemplo, por pendência na prestação de contas ou no Conselho de Alimentação Escolar. Os dados abertos não dizem o motivo: vale perguntar à prefeitura ou ao conselho.</div></div>` : ""}
+    <div class="empilha">
+      <div class="box"><h3>${ANO_ATUAL}, ${T("parcial_me", "ano em curso")} <small>até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)}</small></h3>
+        ${a1 ? rsTab([[""], ["Valor", "n"]], [[T("pnae", "Recebido do PNAE"), `<b>${fR$(a1.valor)}</b>`], ["Alunos atendidos", fmt(a1.alunos)], ["Escolas atendidas", fmt(a1.escolas)]])
+          : `<p class="src">Nenhum repasse de ${ANO_ATUAL} registrado até a última atualização do FNDE.</p>`}
+        <p class="src" style="margin-top:8px">O FNDE paga a merenda em parcelas ao longo do ano (10 parcelas, de fevereiro a novembro). O valor de ${ANO_ATUAL} cobre só as parcelas pagas até ${mesAno(ME_META.atualizado.repasses)}.</p></div>
+      <div class="box"><h3>${T("anofechado", "Ano fechado")} de ${ANO_ATUAL - 1}</h3>
+        ${a0 ? rsTab([[""], [String(ANO_ATUAL - 1), "n"], [String(ANO_ATUAL - 2), "n"]], [
+          [T("pnae", "Recebido do PNAE"), `<b>${fR$(a0.valor)}</b>`, fR$(am?.valor)], ["Alunos atendidos", fmt(a0.alunos), fmt(am?.alunos)], ["Escolas atendidas", fmt(a0.escolas), fmt(am?.escolas)],
+          [T("pnaealuno", "Por aluno no ano"), `<b class="${queda ? "warn" : ""}">${fR$(a0.porAluno)}</b>`, fR$(am?.porAluno)]]) : `<p class="src">Sem repasse registrado em ${ANO_ATUAL - 1}.</p>`}
+        ${a0 ? `<p style="margin:10px 0 0;font-size:14px">${pos ? `<b>${pos}º</b> de ${fmt(lista.length)} cidades de ${esc(siglaUF(S.uf))} no valor por aluno · ` : ""}${T("mediana", "mediana")} ${esc(siglaUF(S.uf))}: ${fR$(med0)} por aluno</p>` : ""}</div>
+    </div>
+    <div class="box"><h3>${T("pnaealuno", "Por aluno, ano a ano")} <small>anos fechados</small></h3>${barrasAnos(anos, anos.map(a => meAno(reg, a)?.porAluno), v => Math.round(v), anos.length - 1)}
+      <p class="src" style="margin-top:6px">Em reais por aluno no ano, valores da época, sem correção pela inflação. O valor por aluno por dia é definido pelo FNDE e muda conforme a etapa (creche, tempo integral, indígena e quilombola recebem mais).</p></div>
+    <div class="grid2">${caixaCae(reg.cae)}${caixaNutri(reg.nut, a1?.alunos || a0?.alunos)}</div>
+    <p class="src">${fonteMerenda()}</p>`;
+}
+function caixaCae(cae){
+  const atual = `Os dados abertos do FNDE trazem só os mandatos que terminaram em 2025; o mandato atual de cada conselho ainda não está publicado. Para a situação de hoje, consulte a prefeitura ou o site do FNDE.`;
+  if (!cae) return `<div class="box"><h3>${T("cae", "Conselho de Alimentação Escolar")}</h3><p class="src">Nenhum mandato desta cidade nos dados abertos do FNDE. ${atual}</p></div>`;
+  return `<div class="box"><h3>${T("cae", "Conselho de Alimentação Escolar")} <small>último mandato nos dados abertos</small></h3>
+    ${rsTab([["Mandato"], ["", "n"]], [["Início", dataCurta(cae.ini + "T12:00")], ["Término", dataCurta(cae.fim + "T12:00")], ["Titulares", `<b>${cae.tit}</b>`], ["Suplentes", cae.sup]])}
+    ${Object.keys(cae.cat).length ? rsTab([["Titulares por segmento"], ["", "n"]], Object.entries(cae.cat).map(([k, v]) => [esc(k), `<b>${v}</b>`])) : ""}
+    <p class="src" style="margin-top:8px">${atual}</p></div>`;
+}
+function caixaNutri(nut, alunos){
+  // referência do Conselho Federal de Nutricionistas (Resolução CFN 465/2010) para a rede de ensino
+  const ref = !alunos ? null : alunos <= 500 ? 1 : alunos <= 1000 ? 2 : alunos <= 2500 ? 3 : alunos <= 5000 ? 4 : 4 + Math.ceil((alunos - 5000) / 2500);
+  const n = nut?.ativos || 0;
+  return `<div class="box"><h3>${T("nutri", "Nutricionistas")} <small>cadastro do FNDE de ${dataCurta(ME_META.atualizado.nutricionistas)}</small></h3>
+    ${rsTab([[""], ["", "n"]], [["Nutricionistas com vínculo ativo", `<b class="${n === 0 ? "bad" : ref && n < ref ? "warn" : "ok"}">${n}</b>`],
+      [T("rt", "Responsável técnico"), nut?.rt ? `<b class="ok">sim</b>` : `<b class="bad">não</b>`], ["Horas por semana, somadas", fmt(nut?.horas || 0)],
+      ...(ref ? [[T("cfn", "Referência do CFN"), `${ref} para ${fmt(alunos)} alunos`]] : [])])}
+    <p class="src" style="margin-top:8px">Nomes e registros profissionais não são mostrados.</p></div>`;
+}
+function estadoMerenda(){
+  const ano0 = ANO_ATUAL - 1, est = meAno(S.merenda.estado, ano0), est1 = meAno(S.merenda.estado, ANO_ATUAL);
+  const lin = MUN.filter(m => m[3] === S.uf).map(m => { const r = S.merenda.m[m[0]] || {}; return {m: m[0], a0: meAno(r, ano0), a1: meAno(r, ANO_ATUAL), am: meAno(r, ano0 - 1), nut: r.nut, cae: r.cae}; });
+  const tot = k => lin.reduce((s, x) => s + (x[k]?.valor || 0), 0);
+  const semRT = lin.filter(x => !x.nut?.rt).length, quedas = lin.filter(x => x.a0?.porAluno && x.am?.porAluno && x.a0.porAluno < x.am.porAluno * 0.75).length;
+  const ord = {nome: (a, b) => semAcento(nomeMun(a.m)).localeCompare(semAcento(nomeMun(b.m))), aluno: (a, b) => (a.a0?.porAluno ?? 1e9) - (b.a0?.porAluno ?? 1e9),
+    queda: (a, b) => ((a.a0?.porAluno ?? 0) / (a.am?.porAluno || 1)) - ((b.a0?.porAluno ?? 0) / (b.am?.porAluno || 1)), nut: (a, b) => (a.nut?.ativos || 0) - (b.nut?.ativos || 0)}[S.meOrd] || (() => 0);
+  lin.sort(ord);
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">Prefeituras · ${ANO_ATUAL} até ${mesAno(ME_META.atualizado.repasses)}</div><div class="v">${fMi(tot("a1"))}</div><div class="s">em ${ano0}: ${fMi(tot("a0"))}</div></div>
+      <div class="kpi"><div class="k">Governo do estado · ${ano0}</div><div class="v">${fMi(est?.valor)}</div><div class="s">${fmt(est?.alunos)} alunos · ${ANO_ATUAL} até agora: ${fMi(est1?.valor)}</div></div>
+      <div class="kpi ${quedas ? "atencao" : ""}"><div class="k">Repasse por aluno caiu mais de 25%</div><div class="v">${fmt(quedas)}</div><div class="s">cidades, de ${ano0 - 1} para ${ano0}</div></div>
+      <div class="kpi ${semRT ? "alerta" : ""}"><div class="k">Sem ${T("rt", "responsável técnico")}</div><div class="v">${fmt(semRT)}</div><div class="s">de ${fmt(lin.length)} prefeituras</div></div>
+    </div>
+    <div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
+      <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["nome", "Nome"], ["aluno", "Menor valor por aluno"], ["queda", "Maior queda"], ["nut", "Menos nutricionistas"]].map(([k, t]) => `<button type="button" class="chip" data-meord="${k}" aria-pressed="${S.meOrd === k}"><i></i>${t}</button>`).join("")}</div>
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Recebido ${ano0}</th><th class="n">Por aluno ${ano0}</th><th class="n">Por aluno ${ano0 - 1}</th><th class="n">Nutricionistas</th></tr></thead>
+      <tbody>${lin.map(x => { const q = x.a0?.porAluno && x.am?.porAluno && x.a0.porAluno < x.am.porAluno * 0.75;
+        return `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n">${fR$(x.a1?.valor)}</td><td class="n">${fR$(x.a0?.valor)}</td>
+          <td class="n" style="${q ? "color:var(--warn);font-weight:700" : ""}">${fR$(x.a0?.porAluno)}</td><td class="n">${fR$(x.am?.porAluno)}</td>
+          <td class="n" style="${!x.nut?.ativos ? "color:var(--bad);font-weight:700" : ""}">${x.nut?.ativos || 0}${x.nut?.rt ? "" : " · sem RT"}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+}
+function cardMerenda(){
+  if (!ME_META || !S.merenda) return "";
+  const reg = meReg(S.mun); if (!reg) return "";
+  const a1 = meAno(reg, ANO_ATUAL), a0 = meAno(reg, ANO_ATUAL - 1), am = meAno(reg, ANO_ATUAL - 2);
+  const queda = S.mun && a0?.porAluno && am?.porAluno && a0.porAluno < am.porAluno * 0.75;
+  const semRT = S.mun && !reg.nut?.rt;
+  return `<button type="button" class="rs-card ${semRT ? "rs-alerta" : queda ? "rs-atencao" : ""}" data-ir="merenda">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg></span><h3>Merenda escolar</h3></header>
+    <div class="rs-big">${fR$(a1?.valor)}<small>recebidos do ${T("pnae", "PNAE")} em ${ANO_ATUAL} até ${mesAno(ME_META.atualizado.repasses)} (parcial)${S.mun ? "" : " · governo do estado"}</small></div>
+    ${rsTab([[`Ano fechado de ${ANO_ATUAL - 1}`], ["Valor", "n"]], [[T("pnae", "Recebido"), `<b>${fR$(a0?.valor)}</b>`], [T("pnaealuno", "Por aluno"), `<b class="${queda ? "warn" : ""}">${fR$(a0?.porAluno)}</b>`],
+      ...(S.mun ? [[T("nutri", "Nutricionistas"), `<b class="${semRT ? "bad" : "ok"}">${reg.nut?.ativos || 0}${semRT ? " · sem RT" : ""}</b>`]] : [])])}
+    ${queda ? `<p style="margin:0;font-size:13px;color:var(--warn)">Repasse por aluno caiu mais de 25% em relação a ${ANO_ATUAL - 2}.</p>` : ""}
+    <span class="rs-link">Ver merenda →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>FNDE · ${ANO_ATUAL} até ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)</span></span></button>`;
+}
+async function exportarCSVMerenda(){
+  if (!ME_META || !S.merenda) return toast("Sem dados para exportar");
+  const n = v => v == null ? "" : String(v).replace(".", ",");
+  const cab = ["Código IBGE", "Município", "Ano", "Alunos atendidos", "Escolas atendidas", "Valor recebido (R$)", "Por aluno (R$)"];
+  const linhas = [];
+  for (const [m, r] of Object.entries(S.merenda.m)) if (!S.mun || +m === S.mun) for (const ano of Object.keys(r.r || {}).sort()){ const x = meAno(r, ano); linhas.push([m, nomeMun(+m), ano, x.alunos, x.escolas, n(x.valor), n(x.porAluno?.toFixed(2))]); }
+  const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  await salvar(`educa-ja-merenda-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
+}
 function cabecalhoA(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
     <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
@@ -1796,6 +1934,8 @@ function ligar(){
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
     if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
     const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
+    const mo = t.closest("[data-meord]"); if (mo){ S.meOrd = mo.dataset.meord; renderMerenda(); return; }
+    if (t.closest("#me-csv")){ exportarCSVMerenda(); return; }
     const fr = t.closest("[data-flrede]"); if (fr){ S.flRede = fr.dataset.flrede; renderFluxo(); return; }
     const fe = t.closest("[data-flet]"); if (fe){ S.flEt = +fe.dataset.flet; renderFluxo(); return; }
     const fo = t.closest("[data-flord]"); if (fo){ S.flOrd = fo.dataset.flord; renderFluxo(); return; }
@@ -1836,6 +1976,7 @@ async function iniciar(){
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
+    ME_META = await getJSON("data/merenda/meta.json").catch(() => null);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
