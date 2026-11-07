@@ -271,6 +271,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 [data-view="gastos"], [data-ir="gastos"], #v-gastos {--mc:var(--m-gastos)}
 [data-view="fluxo"], [data-ir="fluxo"], #v-fluxo {--mc:var(--m-fluxo)}
 [data-view="merenda"], [data-ir="merenda"], #v-merenda {--mc:var(--m-merenda)}
+[data-view="pdde"], [data-ir="pdde"], #v-pdde {--mc:var(--m-pdde)}
 .mod-fluxo{--mc:var(--m-fluxo)} .mod-merenda{--mc:var(--m-merenda)} .mod-pdde{--mc:var(--m-pdde)} .mod-transp{--mc:var(--m-transp)}
 .views button{--c1:var(--mc, var(--accent)); --c2:color-mix(in srgb, var(--mc, var(--accent)) 38%, var(--surface))}
 .views button[aria-pressed="true"]{background:color-mix(in srgb, var(--mc, var(--accent)) 13%, var(--surface)); color:var(--ink); box-shadow:inset 3px 0 0 var(--mc, var(--lapis))}
@@ -399,6 +400,7 @@ td.ruim{color:var(--bad); font-weight:700}
   .tabbar{display:grid; grid-template-columns:repeat(var(--n, 2), minmax(0,1fr)); background:var(--surface); border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom,0px); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px)}
   .tabbar button{border:0; background:transparent; padding:8px 0 10px; min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px; font-weight:700; color:var(--muted)}
+  .tabbar button{font-size:clamp(9.5px, 2.9vw, 12px); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip}
   .tabbar button .dico{width:24px; height:24px; --c1:color-mix(in srgb, var(--mc) 55%, var(--muted)); --c2:color-mix(in srgb, var(--mc) 22%, var(--surface))}
   .tabbar button[aria-pressed="true"]{color:var(--ink)}
   .tabbar button[aria-pressed="true"]{color:var(--mc)}
@@ -441,11 +443,11 @@ td.ruim{color:var(--bad); font-weight:700}
       <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg><span>Gastos</span></button>
       <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg><span>Fluxo escolar</span></button>
       <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg><span>Merenda</span></button>
+      <button type="button" data-view="pdde" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg><span>Dinheiro na escola</span></button>
     </nav>
     <div>
       <p class="menu-tit">Em breve</p>
       <div class="views" aria-label="Seções em construção">
-        <span class="breve mod-pdde"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>Dinheiro na escola</span>
         <span class="breve mod-transp"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg>Transporte</span>
       </div>
     </div>
@@ -470,15 +472,17 @@ td.ruim{color:var(--bad); font-weight:700}
     <div class="view" id="v-gastos" hidden><div class="inner" id="gastos"></div></div>
     <div class="view" id="v-fluxo" hidden><div class="inner" id="fluxo"></div></div>
     <div class="view" id="v-merenda" hidden><div class="inner" id="merenda"></div></div>
+    <div class="view" id="v-pdde" hidden><div class="inner" id="pdde"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:6">
+  <nav class="tabbar" aria-label="Navegação" style="--n:7">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
     <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprender</button>
     <button type="button" data-view="gastos" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-gastos"/></svg>Gastos</button>
     <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo</button>
     <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</button>
+    <button type="button" data-view="pdde" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>PDDE</button>
   </nav>
 </div>
 
@@ -496,7 +500,7 @@ const store = {
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
 const PADRAO = {uf: 51, mun: 5106752};
-const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda"];
+const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda", "pdde"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
@@ -534,13 +538,13 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let ME_META = null, TR_META = null; const MERENDA = new Map(), TRANSF = new Map();
+let ME_META = null, TR_META = null, PD_META = null; const MERENDA = new Map(), TRANSF = new Map(), PDDE = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
 const ENEM = new Map();
 const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", meOrd: "nome", gOrd: "nome", etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", meOrd: "nome", pdOrd: "saldo", gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -593,6 +597,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarPdde(uf){
+  if (!PD_META || !PD_META.ufs.includes(uf)) return null;
+  if (!PDDE.has(uf)) PDDE.set(uf, getJSON(`data/pdde/${uf}.json`).catch(e => { PDDE.delete(uf); throw e; }));
+  return PDDE.get(uf);
+}
 async function carregarTransf(uf){
   if (!TR_META || !TR_META.ufs.includes(uf)) return null;
   if (!TRANSF.has(uf)) TRANSF.set(uf, getJSON(`data/transferencias/${uf}.json`).catch(e => { TRANSF.delete(uf); throw e; }));
@@ -641,7 +650,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); S.transf = await carregarTransf(uf).catch(() => null); juntarTransf(); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null)]); juntarTransf(); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -695,7 +704,7 @@ function setView(v, {semHash} = {}){
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); renderMerenda(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); renderMerenda(); renderPdde(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -738,6 +747,10 @@ const DICAS = {
   enareas: "As 4 provas objetivas são corrigidas pela <b>TRI</b> (Teoria de Resposta ao Item): a nota depende de quais questões o aluno acertou, não só de quantas. Não há nota máxima fixa; a média nacional fica perto de 500.",
   redacao: "A redação vale de 0 a 1.000: cinco competências de até 200 pontos cada (norma culta, tema, argumentação, coesão e proposta de intervenção).",
   enpart: "Alunos do último ano que foram aos dois dias de prova, de todos os que se inscreveram informando a escola. Faltar muito derruba o número de participantes e pode mudar a média.",
+  pdde: "<b>PDDE</b> é o Programa Dinheiro Direto na Escola, do FNDE. O dinheiro vai direto para a associação de pais e mestres de cada escola, para pequenos reparos, material e atividades pedagógicas, decididos pela própria comunidade escolar.",
+  pddebasico: "Parte fixa do PDDE, paga todo ano às escolas públicas conforme o número de alunos do Censo Escolar, em geral em 2 parcelas. Há também ações extras com regras próprias (Educação Conectada, tempo integral, acessibilidade...).",
+  saldopdde: "Dinheiro do PDDE que estava na conta da associação no fim do ano, sem ser gasto. Um pouco de saldo é normal (parcela que chegou no fim do ano); saldo alto e repetido indica dinheiro que poderia estar melhorando a escola.",
+  uex: "A <b>Unidade Executora</b> (associação de pais e mestres, conselho escolar ou caixa escolar) é a entidade da comunidade que recebe e presta contas do dinheiro do PDDE.",
   pnae: "<b>PNAE</b> é o Programa Nacional de Alimentação Escolar, do FNDE. O governo federal manda dinheiro à prefeitura e ao estado para comprar a merenda dos alunos da rede pública, conforme o número de matrículas do Censo Escolar. A prefeitura completa com recursos próprios.",
   pnaealuno: "Valor recebido no ano dividido pelos alunos atendidos. O FNDE paga por aluno por dia letivo (200 dias), com valores maiores para creche, tempo integral e escolas indígenas e quilombolas.",
   parcial_me: "O FNDE paga a merenda em 10 parcelas por ano e atualiza os dados abertos de tempos em tempos. Por isso o valor do ano em curso é parcial.",
@@ -821,7 +834,7 @@ function renderPainel(){
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
       : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
     [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
-  const breve = [["d-pdde", "Dinheiro na escola", "PDDE recebido por escola e saldo parado nas contas."], ["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
+  const breve = [["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
     <div class="rs-grid">
@@ -837,6 +850,7 @@ function renderPainel(){
       ${cardGastos()}
       ${cardFluxo()}
       ${cardMerenda()}
+      ${cardPdde()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve mod-${({"d-fluxo": "fluxo", "d-merenda": "merenda", "d-pdde": "pdde", "d-onibus": "transp"})[ic]}" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -1463,8 +1477,8 @@ const mesAno = iso => iso ? new Date(iso).toLocaleDateString("pt-BR", {month: "l
 function ateQuando(){ return usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : mesAno(ME_META.atualizado.repasses); }
 function periodoMerenda(){ return usaTR(ANO_ATUAL) ? `Repasses mês a mês até ${nomeMes(TR_META.ultimo)} e ${ANO_ATUAL - 1} (ano fechado)` : `Repasses de ${ANO_ATUAL} até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)`; }
 function fonteMerenda(){ return `Fontes: ${TR_META && S.transf ? `${esc(TR_META.fonte)} (valores de ${TR_META.meses[0].slice(0, 4)} em diante, ${esc(TR_META.aviso.charAt(0).toLowerCase() + TR_META.aviso.slice(1))}); ` : ""}${esc(ME_META.fonte)}. ${esc(ME_META.aviso)} Dados coletados em ${dataBR(ME_META.gerado_em)}.`; }
-function barrasMeses(reg){
-  const falta = new Set(mesesSemRepasse(reg, ANO_ATUAL));
+function barrasMeses(reg, faltando){
+  const falta = new Set(faltando ?? mesesSemRepasse(reg, ANO_ATUAL));
   const a1 = trIdx(ANO_ATUAL), a0 = trIdx(ANO_ATUAL - 1); if (!a0.length && !a1.length) return "";
   const v1 = MESES.map((_, k) => { const i = a1.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
   const v0 = MESES.map((_, k) => { const i = a0.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
@@ -1478,7 +1492,7 @@ function barrasMeses(reg){
       if (W > 400 && v1[i] > 0) g += `<text class="val" x="${x + bw * .5 + w / 2}" y="${y(v1[i]) - 5}" text-anchor="middle" style="font-size:10px">${k(v1[i])}</text>`;
       if (v1[i] === 0 && falta.has(m)) g += `<text x="${x + bw * .5 + w / 2}" y="${y(0) - 5}" text-anchor="middle" style="font-size:${W > 400 ? 11 : 9}px;fill:var(--bad);font-weight:700">0</text>`; }
     g += `<text x="${x + bw / 2}" y="${H - 7}" text-anchor="middle" style="font-size:${W > 400 ? 12 : 10}px">${m}</text>`; });
-  return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Repasses da merenda por mês">${g}</svg>
+  return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Repasses por mês">${g}</svg>
     <div class="legenda-m" style="margin:8px 0 0"><span><i style="width:10px;height:10px;background:var(--mc)"></i>${ANO_ATUAL}</span><span><i style="width:10px;height:10px;background:color-mix(in srgb, var(--mc) 30%, var(--surface))"></i>${ANO_ATUAL - 1}</span><span>pelo mês do pagamento</span></div>`;
 }
 function cabecalhoM(titulo, sub, acoes = ""){
@@ -1599,6 +1613,113 @@ async function exportarCSVMerenda(){
     for (const [m, r] of Object.entries(S.merenda.m)) if ((!S.mun || +m === S.mun) && r.t) TR_META.meses.forEach((mes, i) => { if (r.t[i]) linhas.push([m, nomeMun(+m), mes, "", "", n(r.t[i].toFixed(2)), ""]); }); }
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-merenda-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
+}
+
+/* ===================== dinheiro na escola (PDDE) ===================== */
+// e: [alunos, índice da associação, estimado, pago (PDDE Básico), parcelas, saldo]
+const pdE = cod => { const v = S.pdde?.e?.[cod]; return v ? {alunos: v[0], uex: v[1] != null ? S.pdde.uex[v[1]] : null, estimado: v[2], pago: v[3], parcelas: v[4], saldo: v[5]} : null; };
+const saldoAlto = x => x && x.saldo >= 1000 && x.saldo >= (x.pago || x.estimado || 0) * 0.5;
+function uex2026(cnpj, ano = ANO_ATUAL){ const u = S.transf?.uex?.[cnpj]; if (!u) return 0; return trIdx(ano).reduce((s, i) => s + (u[2][i] || 0), 0); }
+function escolasPdde(mun){
+  // escolas públicas da cidade no PDDE (pelo código INEP); quantas escolas cada associação atende
+  const cods = Object.keys(S.pdde?.e || {}).map(Number).filter(cod => { const r = S.rows.find(x => x[C.codigo] === cod); return r ? r[C.municipio] === mun : false; });
+  const porUex = {}; cods.forEach(cod => { const u = pdE(cod)?.uex?.[0]; if (u) porUex[u] = (porUex[u] || 0) + 1; });
+  return cods.map(cod => { const x = pdE(cod), r = S.rows.find(y => y[C.codigo] === cod); return {cod, x, r, comp: x.uex ? porUex[x.uex[0]] : 0, ano: x.uex ? uex2026(x.uex[0]) : 0}; });
+}
+function periodoPdde(){ return `${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} (Portal da Transparência) e ${PD_META.ano_pago} (ano fechado, FNDE)`; }
+function fontePdde(){ return `Fontes: ${esc(PD_META.fonte)}, atualizados em ${dataCurta(PD_META.atualizado.saldo)}; ${TR_META ? esc(TR_META.fonte) + " (" + esc(TR_META.aviso.charAt(0).toLowerCase() + TR_META.aviso.slice(1)) + ")" : ""}. ${esc(PD_META.aviso)} Dados coletados em ${dataBR(PD_META.gerado_em)}.`; }
+function cabecalhoP(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function renderPdde(){
+  const el = $("#pdde"); if (!el) return;
+  const titulo = "Dinheiro na escola · " + esc(lugar());
+  if (!PD_META){ el.innerHTML = cabecalhoP(titulo, "FNDE") + `<div class="aviso">${ICO.info}<div>Os dados do PDDE ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.pdde){ el.innerHTML = cabecalhoP(titulo, periodoPdde()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do PDDE de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const acoes = `<button class="btn" id="pd-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.mun){ el.innerHTML = cabecalhoP(titulo, periodoPdde(), acoes) + estadoPdde() + `<p class="src">${fontePdde()}</p>`; return; }
+  const lin = escolasPdde(S.mun), ano0 = PD_META.ano_pago;
+  const tr = S.transf?.m?.[S.mun]?.pdde, totA = s => s ? trIdx(ANO_ATUAL).reduce((t, i) => t + (s[i] || 0), 0) : 0, tot0 = s => s ? trIdx(ANO_ATUAL - 1).reduce((t, i) => t + (s[i] || 0), 0) : 0;
+  const pago = lin.reduce((t, x) => t + (x.x.pago || 0), 0), saldo = lin.reduce((t, x) => t + (x.x.saldo || 0), 0);
+  const altos = lin.filter(x => saldoAlto(x.x)), semPag = lin.filter(x => x.x.estimado > 0 && !x.x.pago);
+  const ord = {saldo: (a, b) => (b.x.saldo || 0) - (a.x.saldo || 0), nome: (a, b) => semAcento(a.r ? a.r[C.nome] : "").localeCompare(semAcento(b.r ? b.r[C.nome] : "")),
+    ano: (a, b) => b.ano - a.ano, aluno: (a, b) => ((a.x.pago || 0) / (a.x.alunos || 1)) - ((b.x.pago || 0) / (b.x.alunos || 1))}[S.pdOrd] || (() => 0);
+  lin.sort(ord);
+  el.innerHTML = cabecalhoP(titulo, periodoPdde(), acoes) + `
+    ${altos.length ? `<div class="envio atrasado">${ICO.info}<div><b>${altos.length} escola${altos.length > 1 ? "s" : ""} com ${T("saldopdde", "dinheiro parado na conta")}</b>: no fim de ${PD_META.ano_saldo}, o saldo era de pelo menos metade do que a escola recebeu no ano. Juntas, tinham ${fR$(altos.reduce((t, x) => t + x.x.saldo, 0))} sem uso.</div></div>` : ""}
+    <div class="empilha">
+      <div class="box"><h3>${ANO_ATUAL}, ${T("parcial", "ano em curso")} <small>até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}, todas as ações do PDDE</small></h3>
+        ${usaTR(ANO_ATUAL) ? rsTab([[""], [String(ANO_ATUAL), "n"], [`${ANO_ATUAL - 1} inteiro`, "n"]], [[T("pdde", "Recebido pelas escolas da cidade"), `<b>${fR$(totA(tr))}</b>`, fR$(tot0(tr))]]) + barrasMeses({t: tr}, []) : `<p class="src">Repasses mês a mês ainda não disponíveis.</p>`}
+        <p class="src" style="margin-top:8px">Inclui o PDDE Básico e as ações extras (Educação Conectada, escola em tempo integral, acessibilidade, entre outras), pelo mês do pagamento.</p></div>
+      <div class="box"><h3>${T("anofechado", "Ano fechado")} de ${ano0} <small>${T("pddebasico", "PDDE Básico")} e saldo nas contas</small></h3>
+        ${rsTab([[""], ["Valor", "n"]], [["Escolas públicas atendidas", `<b>${fmt(lin.filter(x => x.x.pago > 0).length)}</b> de ${fmt(lin.length)}`],
+          [T("pddebasico", "PDDE Básico pago"), `<b>${fR$(pago)}</b>`], ["Por aluno", fR$(pago / Math.max(1, lin.reduce((t, x) => t + (x.x.alunos || 0), 0)))],
+          [T("saldopdde", `Saldo nas contas no fim de ${PD_META.ano_saldo}`), `<b class="${altos.length ? "warn" : ""}">${fR$(saldo)}</b>`],
+          ...(semPag.length ? [["Previstas e sem pagamento", `<b class="bad">${semPag.length}</b>`]] : [])])}</div>
+    </div>
+    <div class="box"><h3>Escolas de ${esc(nomeMun(S.mun))} <small>toque para abrir a ficha</small></h3>
+      <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["saldo", "Maior saldo parado"], ["ano", `Mais recebido em ${ANO_ATUAL}`], ["aluno", "Menos por aluno"], ["nome", "Nome"]].map(([k, t]) => `<button type="button" class="chip" data-pdord="${k}" aria-pressed="${S.pdOrd === k}"><i></i>${t}</button>`).join("")}</div>
+      <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Rede</th><th class="n">Alunos</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Básico ${ano0}</th><th class="n">Saldo fim ${PD_META.ano_saldo}</th></tr></thead>
+      <tbody>${lin.map(x => `<tr class="click" data-esc="${x.cod}"><td>${x.r ? esc(tituloEscola(x.r[C.nome])) : "Escola " + x.cod}</td><td>${x.r ? REDE[x.r[C.rede]] : ""}</td><td class="n">${fmt(x.x.alunos)}</td>
+        <td class="n">${fR$(x.ano)}${x.comp > 1 ? `<sup title="A associação atende ${x.comp} escolas: o valor é de todas">*</sup>` : ""}</td><td class="n">${x.x.estimado > 0 && !x.x.pago ? `<b style="color:var(--bad)">não pago</b>` : fR$(x.x.pago)}</td>
+        <td class="n" style="${saldoAlto(x.x) ? "color:var(--warn);font-weight:700" : ""}">${fR$(x.x.saldo)}</td></tr>`).join("")}</tbody></table></div>
+      ${lin.some(x => x.comp > 1) ? `<p class="src" style="margin-top:8px">* A mesma associação atende mais de uma escola: o valor de ${ANO_ATUAL} é o da associação inteira.</p>` : ""}</div>
+    <p class="src">${fontePdde()}</p>`;
+}
+function estadoPdde(){
+  const ano0 = PD_META.ano_pago;
+  const porMun = {};
+  for (const [cod, v] of Object.entries(S.pdde.e)){ const r = S.rows.find(y => y[C.codigo] === +cod); if (!r) continue; const x = pdE(cod);
+    const m = porMun[r[C.municipio]] ||= {esc: 0, pago: 0, saldo: 0, altos: 0, alunos: 0}; m.esc++; m.pago += x.pago || 0; m.saldo += x.saldo || 0; m.alunos += x.alunos || 0; if (saldoAlto(x)) m.altos++; }
+  const lin = Object.entries(porMun).map(([m, d]) => ({m: +m, ...d, ano: trIdx(ANO_ATUAL).reduce((t, i) => t + (S.transf?.m?.[m]?.pdde?.[i] || 0), 0)}));
+  const tot = k => lin.reduce((t, x) => t + x[k], 0);
+  const ord = {saldo: (a, b) => b.saldo - a.saldo, nome: (a, b) => semAcento(nomeMun(a.m)).localeCompare(semAcento(nomeMun(b.m))), ano: (a, b) => b.ano - a.ano, aluno: (a, b) => a.pago / (a.alunos || 1) - b.pago / (b.alunos || 1)}[S.pdOrd] || (() => 0);
+  lin.sort(ord);
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">Escolas · ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</div><div class="v">${fMi(tot("ano"))}</div><div class="s">todas as ações do PDDE</div></div>
+      <div class="kpi"><div class="k">${T("pddebasico", "PDDE Básico")} ${ano0}</div><div class="v">${fMi(tot("pago"))}</div><div class="s">${fmt(tot("esc"))} escolas públicas</div></div>
+      <div class="kpi ${tot("altos") ? "atencao" : ""}"><div class="k">${T("saldopdde", "Saldo parado")} fim de ${PD_META.ano_saldo}</div><div class="v">${fMi(tot("saldo"))}</div><div class="s">${fmt(tot("altos"))} escolas com saldo alto</div></div>
+      <div class="kpi"><div class="k">Por aluno · ${ano0}</div><div class="v">${fR$(tot("pago") / Math.max(1, tot("alunos")))}</div><div class="s">PDDE Básico</div></div>
+    </div>
+    <div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
+      <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["saldo", "Maior saldo parado"], ["ano", `Mais recebido em ${ANO_ATUAL}`], ["aluno", "Menos por aluno"], ["nome", "Nome"]].map(([k, t]) => `<button type="button" class="chip" data-pdord="${k}" aria-pressed="${S.pdOrd === k}"><i></i>${t}</button>`).join("")}</div>
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">Escolas</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Básico ${ano0}</th><th class="n">Saldo parado</th><th class="n">Saldo alto</th></tr></thead>
+      <tbody>${lin.map(x => `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n">${fmt(x.esc)}</td><td class="n">${fR$(x.ano)}</td><td class="n">${fR$(x.pago)}</td><td class="n">${fR$(x.saldo)}</td><td class="n" style="${x.altos ? "color:var(--warn);font-weight:700" : ""}">${x.altos}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function cardPdde(){
+  if (!PD_META || !S.pdde) return "";
+  let ano = 0, pago = 0, saldo = 0, altos = 0, n = 0;
+  if (S.mun){ const lin = escolasPdde(S.mun); if (!lin.length) return ""; n = lin.length; pago = lin.reduce((t, x) => t + (x.x.pago || 0), 0); saldo = lin.reduce((t, x) => t + (x.x.saldo || 0), 0); altos = lin.filter(x => saldoAlto(x.x)).length;
+    ano = trIdx(ANO_ATUAL).reduce((t, i) => t + (S.transf?.m?.[S.mun]?.pdde?.[i] || 0), 0); }
+  else { for (const [cod, v] of Object.entries(S.pdde.e)){ const x = pdE(cod); n++; pago += x.pago || 0; saldo += x.saldo || 0; if (saldoAlto(x)) altos++; }
+    ano = Object.values(S.transf?.m || {}).reduce((t, d) => t + trIdx(ANO_ATUAL).reduce((u, i) => u + (d.pdde?.[i] || 0), 0), 0); }
+  return `<button type="button" class="rs-card ${altos ? "rs-atencao" : ""}" data-ir="pdde">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg></span><h3>Dinheiro na escola</h3></header>
+    <div class="rs-big">${fR$(ano)}<small>recebidos pelas escolas pelo ${T("pdde", "PDDE")} em ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} (parcial)</small></div>
+    ${rsTab([[`Ano fechado de ${PD_META.ano_pago}`], ["Valor", "n"]], [[T("pddebasico", "PDDE Básico"), `<b>${fR$(pago)}</b>`], [T("saldopdde", "Saldo nas contas"), `<b class="${altos ? "warn" : ""}">${fR$(saldo)}</b>`], ["Escolas com saldo alto", `<b class="${altos ? "warn" : "ok"}">${altos} de ${n}</b>`]])}
+    <span class="rs-link">Ver dinheiro na escola →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>Portal da Transparência e FNDE · ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} e ${PD_META.ano_pago} (ano fechado)</span></span></button>`;
+}
+function caixaPddeFicha(cod){
+  const x = pdE(cod); if (!PD_META || !x) return "";
+  const ano = x.uex ? uex2026(x.uex[0]) : 0;
+  return `<div class="box"><h3>${T("pdde", "Dinheiro na escola (PDDE)")}</h3><div class="dl">
+    ${x.uex ? `<span>${T("uex", "Associação")}</span><span style="font-weight:500">${esc(x.uex[1])}</span>` : ""}
+    <span>Recebido em ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</span><span>${fR$(ano)}</span>
+    <span>${T("pddebasico", "PDDE Básico")} ${PD_META.ano_pago}</span><span>${x.estimado > 0 && !x.pago ? `<b style="color:var(--bad)">previsto ${fR$(x.estimado)} e não pago</b>` : `${fR$(x.pago)} em ${x.parcelas} parcela${x.parcelas === 1 ? "" : "s"}`}</span>
+    <span>${T("saldopdde", "Saldo na conta")} (fim de ${PD_META.ano_saldo})</span><span style="${saldoAlto(x) ? "color:var(--warn)" : ""}">${fR$(x.saldo)}${saldoAlto(x) ? " · alto" : ""}</span>
+  </div></div>`;
+}
+async function exportarCSVPdde(){
+  if (!PD_META || !S.pdde) return toast("Sem dados para exportar");
+  const n = v => v == null ? "" : String(Math.round(v * 100) / 100).replace(".", ",");
+  const cab = ["Código INEP", "Escola", "Município", "Rede", "Alunos", "CNPJ da associação", "Associação", `Recebido ${ANO_ATUAL} (até ${TR_META?.ultimo || ""})`, `PDDE Básico estimado ${PD_META.ano_estimado}`, `PDDE Básico pago ${PD_META.ano_pago}`, "Parcelas", `Saldo fim ${PD_META.ano_saldo}`];
+  const linhas = [];
+  for (const cod of Object.keys(S.pdde.e)){ const r = S.rows.find(y => y[C.codigo] === +cod); if (S.mun && (!r || r[C.municipio] !== S.mun)) continue; const x = pdE(cod);
+    linhas.push([cod, r ? r[C.nome] : "", r ? nomeMun(r[C.municipio]) : "", r ? REDE[r[C.rede]] : "", x.alunos, x.uex?.[0] || "", x.uex?.[1] || "", n(x.uex ? uex2026(x.uex[0]) : 0), n(x.estimado), n(x.pago), x.parcelas, n(x.saldo)]); }
+  const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  await salvar(`educa-ja-pdde-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
 function cabecalhoA(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
@@ -1937,6 +2058,7 @@ function abrirFicha(cod, {semHistorico} = {}){
         ${nz(C.mat_moram_zona_rural, "Moram na zona rural")}${nz(C.mat_transporte_publico, "Usam transporte escolar público")}</div>` : `<p class="src">Sem alunos matriculados ${ativa(r) ? "na data do Censo" : "(escola paralisada)"}.</p>`}</div>
       ${caixaIdebFicha(cod)}
       ${caixaEnemFicha(cod)}
+      ${caixaPddeFicha(cod)}
       <div class="box"><h3>Professores <small>(na data do Censo)</small></h3><div class="dl">
         ${n(C.docentes, "Professores")}${n(C.docentes_superior, "Com curso superior")}${n(C.docentes_licenciatura, "Com licenciatura")}
         ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}</div></div>
@@ -1990,6 +2112,8 @@ function ligar(){
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
     if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
     const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
+    const po = t.closest("[data-pdord]"); if (po){ S.pdOrd = po.dataset.pdord; renderPdde(); return; }
+    if (t.closest("#pd-csv")){ exportarCSVPdde(); return; }
     const mo = t.closest("[data-meord]"); if (mo){ S.meOrd = mo.dataset.meord; renderMerenda(); return; }
     if (t.closest("#me-csv")){ exportarCSVMerenda(); return; }
     const fr = t.closest("[data-flrede]"); if (fr){ S.flRede = fr.dataset.flrede; renderFluxo(); return; }
@@ -2032,7 +2156,7 @@ async function iniciar(){
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
-    [ME_META, TR_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null)]);
+    [ME_META, TR_META, PD_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null), getJSON("data/pdde/meta.json").catch(() => null)]);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
