@@ -22,6 +22,14 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
 
+.prof-tab td:first-child{min-width:150px}
+.prof-tab td.ref, .prof-tab th:last-child{color:var(--muted)}
+.prof-notas{margin:10px 0 0; padding-left:18px; font-size:13.5px; line-height:1.45}
+.prof-notas li{margin:3px 0}
+.tag-pend{display:inline-block; font-size:11px; font-weight:700; color:var(--warn); border:1px solid currentColor; border-radius:999px; padding:0 6px; margin-left:4px; white-space:nowrap}
+.so-estreito{display:none}
+@media (max-width:600px){ .prof-tab th, .prof-tab td, .prof-esc th, .prof-esc td{padding-left:5px; padding-right:5px} .prof-tab td:first-child{min-width:110px} }
+@media (max-width:600px){ .so-largo{display:none} .so-estreito{display:inline} }
 </style>
 <style>
 /* Layout: o mesmo do Saúde Já. Computador: menu lateral à esquerda, barra de local no topo, conteúdo rolando.
@@ -559,6 +567,7 @@ let C = {};                 // índice de cada campo das escolas (vem do meta.js
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
 let LC_META = null; const LOCAIS = new Map();
+let PR_META = null, PR_BR = null; const PROF = new Map();
 let ME_META = null, TR_META = null, PD_META = null, TP_META = null; const MERENDA = new Map(), TRANSF = new Map(), PDDE = new Map(), TRANSP = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
@@ -649,6 +658,11 @@ async function carregarMerenda(uf){
   if (!MERENDA.has(uf)) MERENDA.set(uf, getJSON(`data/merenda/${uf}.json`).catch(e => { MERENDA.delete(uf); throw e; }));
   return MERENDA.get(uf);
 }
+async function carregarProf(uf){
+  if (!PR_META || !PR_META.ufs.includes(uf)) return null;
+  if (!PROF.has(uf)) PROF.set(uf, getJSON(`data/professores/${uf}.json`).catch(e => { PROF.delete(uf); throw e; }));
+  return PROF.get(uf);
+}
 async function carregarFluxo(uf){
   if (!FL_META || !FL_META.ufs.includes(uf)) return null;
   if (!FLUXO.has(uf)) FLUXO.set(uf, getJSON(`data/fluxo/${uf}.json`).catch(e => { FLUXO.delete(uf); throw e; }));
@@ -681,7 +695,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde, S.transp, S.locais] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null), carregarTransp(uf).catch(() => null), carregarLocais(uf).catch(() => null)]); juntarTransf(); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde, S.transp, S.locais, S.prof] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null), carregarTransp(uf).catch(() => null), carregarLocais(uf).catch(() => null), carregarProf(uf).catch(() => null)]); juntarTransf(); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -812,6 +826,12 @@ const DICAS = {
   internet: "Escola que declarou internet disponível para uso dos alunos, não só da secretaria.",
   esgoto: "Escola ligada à rede pública de esgoto ou com fossa.",
   acess: "Escola com pelo menos um recurso de acessibilidade: rampas, corrimão, piso tátil, sinalização, portas largas, banheiro adaptado etc.",
+  afd: "<b>Formação adequada</b> (indicador AFD do INEP): parte das aulas dadas por professores com licenciatura na mesma área da matéria que ensinam. Na educação infantil e nos anos iniciais, conta quem tem Pedagogia ou licenciatura com complementação pedagógica. O INEP classifica de 1 (adequado) a 5 (professor sem curso superior).",
+  ird: "<b>Regularidade dos professores</b> (indicador IRD do INEP): mostra se os mesmos professores continuam na escola ano após ano, olhando os últimos 5 anos. Vai de 0 a 5: <b>até 2 é baixa</b> (muita troca de professores), 2 a 3 média-baixa, 3 a 4 média-alta e acima de 4 alta.",
+  ied: "<b>Esforço docente</b> (indicador IED do INEP): quanto trabalho cada professor tem, somando alunos, turnos, escolas e etapas em que dá aula. Vai do nível 1 (até 25 alunos, um turno, uma escola) ao nível 6 (mais de 400 alunos, três turnos, duas ou três escolas e quatro etapas). Aqui contamos os níveis 4 a 6 como <b>esforço alto</b>.",
+  icg: "<b>Complexidade de gestão</b> (indicador ICG do INEP): o tamanho do desafio de administrar a escola, pelo número de alunos, turnos e etapas. Vai do nível 1 (escola pequena, um turno, uma etapa) ao nível 6 (escola grande, três turnos, quatro etapas ou mais, com EJA ou ensino profissional).",
+  inse: "<b>Nível socioeconômico</b> (Inse do INEP): perfil das famílias dos alunos, calculado com as respostas ao questionário do Saeb (escolaridade dos pais, renda, bens e serviços em casa). Vai do <b>nível I</b> (mais vulnerável) ao <b>nível VIII</b> (mais favorecido). Serve para comparar escolas com alunos de perfil parecido.",
+  cadpdde: "Todo ano a escola (pela associação de pais e mestres) precisa <b>atualizar o cadastro no PDDE Interativo</b>, do FNDE. É exigência para continuar recebendo o PDDE; a pendência pode atrasar ou suspender repasses (muitas escolas nessa situação ainda receberam no ano). O dado vem do FNDE e mostra só se a atualização foi feita. Não é a prestação de contas."
 };
 // termo com balão: T("mde", "Impostos aplicados em educação (MDE)")
 const T = (k, txt) => `<span class="tip" tabindex="0" data-tip="${k}">${txt}</span>`;
@@ -870,7 +890,9 @@ function renderPainel(){
   const alertas = rsTab([["Escolas públicas"], ["", "n"]], [
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
       : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
-    [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
+    [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`],
+    ...((() => { const g = S.mun ? prM(S.mun, "Pública") : prRef(String(S.uf), "Pública"); const v = g?.afd?.[1]?.[0];
+      return v == null ? [] : [[`${T("afd", "Professor formado na área")} <small>anos iniciais</small>`, `<b>${pctTxt(v)}</b>`]]; })())]);
   const breve = [];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
@@ -952,6 +974,8 @@ function renderEscolas(){
       <div id="e-map" role="region" aria-label="Mapa das escolas"></div>
       <div class="mapa-leg">${ORDEM_REDE.map(k => `<span><i style="background:${COR_REDE[k]}"></i>${REDE[k]}</span>`).join("")}<span>tamanho do ponto = número de alunos</span></div>
       <p class="src" style="margin-top:8px">${esc(LC_META.aviso)} Fonte: ${esc(LC_META.fonte)}.</p></div>` : ""}
+    ${caixaProfessores()}
+    ${tabelaEscolasProf()}
     ${S.mun ? "" : tabelaMunicipios()}
     <div class="box" id="e-lista-box"><h3>Lista de escolas</h3>
       <div class="filtros">
@@ -975,6 +999,99 @@ function tabelaMunicipios(){
   return `<div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>(toque para abrir)</small></h3><div class="tablewrap" style="max-height:420px; overflow:auto"><table>
     <thead><tr><th>Município</th><th class="n">Escolas</th><th class="n">Matrículas</th><th class="n">Públicas com internet p/ alunos</th><th class="n">Públicas sem o básico</th></tr></thead>
     <tbody>${lin.map(([m, o]) => `<tr class="click" data-mun="${m}"><td>${esc(nomeMun(m))}</td><td class="n">${fmt(o.esc)}</td><td class="n">${fmt(o.mat)}</td><td class="n">${o.pub ? pct(o.net, o.pub) + "%" : "–"}</td><td class="n" style="${o.sem ? "color:var(--bad); font-weight:700" : ""}">${fmt(o.sem)}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+/* ===================== professores (INEP: AFD, IRD, IED, ICG) e Inse ===================== */
+const PR_ET = ["Educação infantil", "Anos iniciais", "Anos finais", "Ensino médio"];
+const IRD_FX = ["baixa", "média-baixa", "média-alta", "alta"];
+const ROM = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+const prE = cod => S.prof?.e?.[cod];
+const prM = (mun, rede = "Total") => S.prof?.m?.[mun]?.[rede];
+const prRef = (chave, rede = "Total") => PR_BR?.uf?.[chave]?.[rede];
+const irdFaixa = v => v == null ? null : v <= 2 ? 0 : v <= 3 ? 1 : v <= 4 ? 2 : 3;
+const somaN = (a, de) => a ? a.slice(de).reduce((t, x) => t + (x || 0), 0) : null;
+const pctTxt = v => v == null ? "–" : Math.round(v) + "%";
+function inseTxt(v, nivel){ return v == null ? "–" : `${nivel ? "Nível " + ROM[nivel] : ""}${nivel ? " · " : ""}${v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`; }
+function inseNivel(v){ // nível pela menor média de cada nível entre as escolas (meta.inse_cortes)
+  const c = PR_META?.inse_cortes; if (v == null || !c) return null; let n = null;
+  for (const [k, lim] of Object.entries(c).sort((a, b) => a[0] - b[0])) if (v >= lim) n = +k; return n || 1; }
+function caixaInseMun(rede){
+  if (!PR_META || !S.prof || !S.mun) return "";
+  const m = prM(S.mun, rede)?.inse || prM(S.mun, "Total")?.inse, rRot = prM(S.mun, rede)?.inse ? rede.toLowerCase() : "todas as redes";
+  const uf = prRef(String(S.uf), rede)?.inse || prRef(String(S.uf))?.inse;
+  if (!m) return "";
+  const esc_ = linhasEscolasIdeb().map(x => ({x, i: prE(x.r[C.codigo])?.inse})).filter(o => o.i && o.x.v != null);
+  return `<div class="box"><h3>${T("inse", "Perfil dos alunos")} <small>nível socioeconômico · Saeb ${PR_META.ano_inse}</small></h3>
+    <div class="rank"><b>${ROM[inseNivel(m[0])] || "–"}</b><span>nível médio dos alunos da rede ${esc(rRot)} (${inseTxt(m[0])}) · ${esc(siglaUF(S.uf))}: ${uf ? ROM[inseNivel(uf[0])] + " (" + inseTxt(uf[0]) + ")" : "–"}</span></div>
+    <p class="src" style="margin-top:8px">Escala de I (mais vulnerável) a VIII (mais favorecido). Alunos de famílias mais vulneráveis costumam ter notas menores; por isso vale comparar o Ideb de escolas com perfil parecido. ${esc_.length ? "O nível de cada escola está na tabela abaixo." : ""} O Inse de ${PR_META.ano_inse + 2} ainda não foi publicado.</p></div>`;
+}
+function periodoProf(){ return `Censo Escolar ${PR_META.ano} · nível socioeconômico do Saeb ${PR_META.ano_inse}`; }
+function fonteProf(){ return `Fonte: ${esc(PR_META.fonte)}. ${esc(PR_META.aviso)} Dados atualizados em ${dataBR(PR_META.gerado_em)}.`; }
+/* linhas da tabela "Professores": [rótulo, função(registro) -> valor em %] */
+const PR_LINHAS = [
+  [`${T("afd", "Formados na área")}: anos iniciais`, g => g?.afd?.[1]?.[0]],
+  [`${T("afd", "Formados na área")}: anos finais`, g => g?.afd?.[2]?.[0]],
+  [`${T("afd", "Formados na área")}: ensino médio`, g => g?.afd?.[3]?.[0]],
+  [`${T("afd", "Formados na área")}: educação infantil`, g => g?.afd?.[0]?.[0]],
+  [`${T("afd", "Sem curso superior")} (todas as etapas)`, g => g?.afd ? Math.max(...g.afd.map(x => x?.[4] ?? -1)) : null, "max"],
+  [`Escolas com ${T("ird", "regularidade")} média-alta ou alta`, g => g?.ird ? (g.ird[2] || 0) + (g.ird[3] || 0) : null],
+  [`${T("ied", "Esforço alto")}: anos iniciais`, g => somaN(g?.ied?.[0], 3)],
+  [`${T("ied", "Esforço alto")}: anos finais`, g => somaN(g?.ied?.[1], 3)],
+  [`${T("ied", "Esforço alto")}: ensino médio`, g => somaN(g?.ied?.[2], 3)],
+];
+function caixaProfessores(){
+  if (!PR_META || !S.prof) return "";
+  const uf = String(S.uf);
+  const cols = S.mun
+    ? [["Municipal", prM(S.mun, "Municipal")], ["Estadual", prM(S.mun, "Estadual")], ["Privada", prM(S.mun, "Privada")], ["Todas", prM(S.mun, "Total")], [siglaUF(S.uf), prRef(uf)]]
+    : [["Municipal", prRef(uf, "Municipal")], ["Estadual", prRef(uf, "Estadual")], ["Privada", prRef(uf, "Privada")], [siglaUF(S.uf), prRef(uf)], ["Brasil", prRef("br")]];
+  const usa = cols.filter(([, g]) => g);
+  if (!usa.length) return "";
+  const lin = PR_LINHAS.map(([rot, f, tipo]) => {
+    const v = usa.map(([, g]) => { const x = f(g); return x == null || x < 0 ? null : x; });
+    if (v.every(x => x == null)) return "";
+    if (tipo === "max") return "";   // linha auxiliar: só entra no texto
+    return `<tr><td>${rot}</td>${v.map((x, i) => `<td class="n${i === usa.length - 1 ? " ref" : ""}${usa[i][0] === "Privada" ? " so-largo" : ""}">${pctTxt(x)}</td>`).join("")}</tr>`;
+  }).join("");
+  const total = S.mun ? prM(S.mun, "Total") : prRef(uf);
+  const semSup = total?.afd ? total.afd.map((x, i) => [PR_ET[i], x?.[4]]).filter(([, x]) => x != null && x >= 5) : [];
+  const ird = total?.ird, baixa = ird ? (ird[0] || 0) : null;
+  return `<div class="box mod-escolas"><h3>Professores <small>${periodoProf().split(" · ")[0]} · ${S.mun ? "redes de " + esc(lugar()) + " e média do estado" : "redes do estado e média do Brasil"}</small></h3>
+    <div class="tablewrap"><table class="prof-tab"><thead><tr><th>Indicador</th>${usa.map(([n]) => `<th class="n${n === "Privada" ? " so-largo" : ""}">${({Municipal: "Munic<span class='so-largo'>ipal</span>", Estadual: "Estad<span class='so-largo'>ual</span>"})[n] || n}</th>`).join("")}</tr></thead><tbody>${lin}</tbody></table></div>
+    <ul class="prof-notas">
+      ${baixa != null && baixa >= 30 ? `<li><b>${pctTxt(baixa)}</b> das escolas ${S.mun ? "da cidade" : "do estado"} têm ${T("ird", "regularidade baixa")}: muitos professores mudam de um ano para o outro, em geral por contratos temporários.</li>` : ""}
+      ${semSup.length ? `<li>${semSup.map(([n, x]) => `${n}: <b>${pctTxt(x)}</b>`).join(" · ")} das aulas com professor sem curso superior.</li>` : ""}
+      <li>Percentuais das aulas (formação) e dos professores (esforço). Toque nos termos sublinhados para entender cada indicador.</li>
+    </ul>
+    <p class="src" style="margin-top:6px">${fonteProf()}</p></div>`;
+}
+function linhasEscolasProf(){
+  return S.rows.filter(r => r[C.municipio] === S.mun && ativa(r) && prE(r[C.codigo]))
+    .map(r => ({r, p: prE(r[C.codigo])}))
+    .sort((a, b) => semAcento(a.r[C.nome]).localeCompare(semAcento(b.r[C.nome])));
+}
+function tabelaEscolasProf(){
+  if (!PR_META || !S.prof || !S.mun) return "";
+  const lin = linhasEscolasProf(); if (!lin.length) return "";
+  const forma = p => { const a = p.afd || []; const v = [a[1], a[2], a[3], a[0]].filter(x => x != null); return v.length ? Math.min(...v) : null; };
+  return `<div class="box"><h3>Professores e alunos por escola <small>toque para abrir a ficha</small></h3><div class="tablewrap"><table class="prof-esc">
+    <thead><tr><th>Escola</th><th class="so-largo">Rede</th><th class="n">${T("afd", "Formados<br>na área")}</th><th class="n">${T("ird", "Regu<span class='so-largo'>laridade</span><span class='so-estreito'>l.</span>")}</th><th class="n so-largo">${T("icg", "Gestão")}</th><th class="n">${T("inse", "Nível<br>socioec.")}</th></tr></thead>
+    <tbody>${lin.map(({r, p}) => { const f = forma(p), fx = irdFaixa(p.ird);
+      return `<tr class="click" data-esc="${r[C.codigo]}"><td>${esc(tituloEscola(r[C.nome]))}<small class="so-estreito"><br>${REDE[r[C.rede]]}</small></td><td class="so-largo">${REDE[r[C.rede]]}</td>
+        <td class="n">${pctTxt(f)}</td><td class="n" style="${fx === 0 ? "color:var(--warn);font-weight:700" : ""}">${p.ird == null ? "–" : f1(p.ird) + "<small class='so-largo'> " + IRD_FX[fx] + "</small>"}</td>
+        <td class="n so-largo">${p.icg ? "Nível " + p.icg : "–"}</td><td class="n">${p.inse?.[1] ? ROM[p.inse[1]] : "–"}</td></tr>`; }).join("")}</tbody></table></div>
+    <p class="src" style="margin-top:8px">"Formados na área" mostra a etapa com o menor percentual na escola. Regularidade de 0 a 5. O nível socioeconômico vem do Saeb ${PR_META.ano_inse} e só existe para escolas com alunos que fizeram a prova.</p></div>`;
+}
+function caixaProfFicha(cod){
+  const p = prE(cod); if (!PR_META || !p) return "";
+  const r = S.rows.find(x => x[C.codigo] === cod);
+  const of = [r && (r[C.mat_creche] || r[C.mat_pre]), r && r[C.mat_fund_ai], r && r[C.mat_fund_af], r && r[C.mat_medio]];
+  const afd = (p.afd || []).map((v, i) => v == null || (!of[i] && r) ? "" : `<span style="padding-left:12px;color:var(--muted)">${PR_ET[i]}</span><span>${pctTxt(v)}</span>`).join("");
+  const ied = (p.ied || []).map((g, i) => g ? `<span style="padding-left:12px;color:var(--muted)">${PR_ET[i + 1]}</span><span>${pctTxt(somaN(g, 3))}</span>` : "").join("");
+  const fx = irdFaixa(p.ird);
+  return `${afd ? `<span>${T("afd", "Aulas com professor formado na área")}</span><span></span>${afd}` : ""}
+    ${p.ird != null ? `<span>${T("ird", "Regularidade dos professores")}</span><span style="${fx === 0 ? "color:var(--warn)" : ""}">${f1(p.ird)} de 5 · ${IRD_FX[fx]}</span>` : ""}
+    ${ied ? `<span>${T("ied", "Professores com esforço alto")}</span><span></span>${ied}` : ""}
+    ${p.icg ? `<span>${T("icg", "Complexidade de gestão")}</span><span>Nível ${p.icg} de 6</span>` : ""}`;
 }
 /* ===================== mapa das escolas ===================== */
 let MAPA = null, CAMADA = null, LEAFLET = null;
@@ -1185,8 +1302,10 @@ function caixaIdebFicha(cod){
   const linhas = ["ai", "af", "em"].filter(et => temIdeb(e?.[et])).map(et => { const s = e[et];
     return `<span>${ETAPA_NOME[et]} <small style="color:var(--muted)">(${ETAPA_SUB[et]})</small></span><span>${f1(val(s, "ideb", ult))} <small style="color:var(--muted);font-weight:400">· ${ant}: ${f1(val(s, "ideb", ult - 1))}</small></span>
       <span style="color:var(--muted);padding-left:12px">Saeb ${IDEB_META.ano}: matemática / português</span><span>${f0(val(s, "mat", ult))} / ${f0(val(s, "port", ult))}</span>`; }).join("");
-  return `<div class="box"><h3>Aprendizagem (Ideb ${IDEB_META.ano}) <small>provas do Saeb no fim de ${IDEB_META.ano}</small></h3>${linhas ? `<div class="dl">${linhas}</div>`
-    : `<p class="src">Sem Ideb ${IDEB_META.ano} para esta escola. O INEP só calcula quando pelo menos 10 alunos fazem a prova do Saeb e a participação é suficiente.</p>`}</div>`;
+  const ins = prE(cod)?.inse;
+  const linhaInse = ins ? `<span>${T("inse", "Nível socioeconômico dos alunos")} <small style="color:var(--muted)">(Saeb ${PR_META.ano_inse})</small></span><span>${inseTxt(ins[0], ins[1])}</span>` : "";
+  return `<div class="box"><h3>Aprendizagem (Ideb ${IDEB_META.ano}) <small>provas do Saeb no fim de ${IDEB_META.ano}</small></h3>${linhas ? `<div class="dl">${linhas}${linhaInse}</div>`
+    : `<p class="src">Sem Ideb ${IDEB_META.ano} para esta escola. O INEP só calcula quando pelo menos 10 alunos fazem a prova do Saeb e a participação é suficiente.</p>${linhaInse ? `<div class="dl">${linhaInse}</div>` : ""}`}</div>`;
 }
 
 function grafico(series, anos){
@@ -1276,6 +1395,7 @@ function renderIdeb(){
         <div class="faixas" aria-hidden="true">${faixas.map(f => `<div style="width:${(f.n * 100 / (outros.length || 1)).toFixed(1)}%;background:${f.cor}"></div>`).join("")}</div>
         <div class="leg-g">${faixas.map(f => `<span><i style="--c:${f.cor};border-top-width:8px;width:12px"></i>${f.a === 0 ? "até 4,9" : f.b === 10 ? "6,0 ou mais" : "5,0 a 5,9"}: ${fmt(f.n)}</span>`).join("")}</div>
         <p class="src" style="margin-top:10px">O MEC acompanha de perto os municípios com Ideb abaixo de 5,0 nos anos iniciais.</p></div>
+      ${caixaInseMun(rede)}
       ${explicaIdeb(true)}
     </div>
     ${tabelaEscolasIdeb()}
@@ -1708,7 +1828,12 @@ async function exportarCSVMerenda(){
 
 /* ===================== dinheiro na escola (PDDE) ===================== */
 // e: [alunos, índice da associação, estimado, pago (PDDE Básico), parcelas, saldo]
-const pdE = cod => { const v = S.pdde?.e?.[cod]; return v ? {alunos: v[0], uex: v[1] != null ? S.pdde.uex[v[1]] : null, estimado: v[2], pago: v[3], parcelas: v[4], saldo: v[5]} : null; };
+const pdE = cod => { const v = S.pdde?.e?.[cod]; return v ? {alunos: v[0], uex: v[1] != null ? S.pdde.uex[v[1]] : null, estimado: v[2], pago: v[3], parcelas: v[4], saldo: v[5], cad: v[6] ?? null} : null; };
+const cadPend = x => !!PD_META?.ano_cadastro && x?.cad === 0;
+function avisoCadPdde(lin){
+  const pend = lin.filter(x => cadPend(x.x)); if (!pend.length) return "";
+  return `<div class="envio atrasado">${ICO.info}<div><b>${pend.length} escola${pend.length > 1 ? "s" : ""} com o ${T("cadpdde", "cadastro do PDDE")} não atualizado</b>${pend.length <= 4 ? ": " + pend.map(x => x.r ? esc(tituloEscola(x.r[C.nome])) : "escola " + x.cod).join(", ") : ""}. A atualização anual é exigência do FNDE; a pendência pode atrasar ou suspender repasses. Situação no FNDE em ${dataCurta(PD_META.atualizado.cadastro)} (exercício ${PD_META.ano_cadastro}).</div></div>`;
+}
 const saldoAlto = x => x && x.saldo >= 1000 && x.saldo >= (x.pago || x.estimado || 0) * 0.5;
 function uex2026(cnpj, ano = ANO_ATUAL){ const u = S.transf?.uex?.[cnpj]; if (!u) return 0; return trIdx(ano).reduce((s, i) => s + (u[2][i] || 0), 0); }
 function escolasPdde(mun){
@@ -1738,6 +1863,7 @@ function renderPdde(){
     ano: (a, b) => b.ano - a.ano, aluno: (a, b) => ((a.x.pago || 0) / (a.x.alunos || 1)) - ((b.x.pago || 0) / (b.x.alunos || 1))}[S.pdOrd] || (() => 0);
   lin.sort(ord);
   el.innerHTML = cabecalhoP(titulo, periodoPdde(), acoes) + `
+    ${avisoCadPdde(lin)}
     ${altos.length ? `<div class="envio atrasado">${ICO.info}<div><b>${altos.length} escola${altos.length > 1 ? "s" : ""} com ${T("saldopdde", "dinheiro parado na conta")}</b>: no fim de ${PD_META.ano_saldo}, o saldo era de pelo menos metade do que a escola recebeu no ano. Juntas, tinham ${fR$(altos.reduce((t, x) => t + x.x.saldo, 0))} sem uso.</div></div>` : ""}
     <div class="empilha">
       <div class="box"><h3>${ANO_ATUAL}, ${T("parcial", "ano em curso")} <small>até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}, todas as ações do PDDE</small></h3>
@@ -1752,7 +1878,7 @@ function renderPdde(){
     <div class="box"><h3>Escolas de ${esc(nomeMun(S.mun))} <small>toque para abrir a ficha</small></h3>
       <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["saldo", "Maior saldo parado"], ["ano", `Mais recebido em ${ANO_ATUAL}`], ["aluno", "Menos por aluno"], ["nome", "Nome"]].map(([k, t]) => `<button type="button" class="chip" data-pdord="${k}" aria-pressed="${S.pdOrd === k}"><i></i>${t}</button>`).join("")}</div>
       <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Rede</th><th class="n">Alunos</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Básico ${ano0}</th><th class="n">Saldo fim ${PD_META.ano_saldo}</th></tr></thead>
-      <tbody>${lin.map(x => `<tr class="click" data-esc="${x.cod}"><td>${x.r ? esc(tituloEscola(x.r[C.nome])) : "Escola " + x.cod}</td><td>${x.r ? REDE[x.r[C.rede]] : ""}</td><td class="n">${fmt(x.x.alunos)}</td>
+      <tbody>${lin.map(x => `<tr class="click" data-esc="${x.cod}"><td>${x.r ? esc(tituloEscola(x.r[C.nome])) : "Escola " + x.cod}${cadPend(x.x) ? ` <span class="tag-pend">cadastro não atualizado</span>` : ""}</td><td>${x.r ? REDE[x.r[C.rede]] : ""}</td><td class="n">${fmt(x.x.alunos)}</td>
         <td class="n">${fR$(x.ano)}${x.comp > 1 ? `<sup title="A associação atende ${x.comp} escolas: o valor é de todas">*</sup>` : ""}</td><td class="n">${x.x.estimado > 0 && !x.x.pago ? `<b style="color:var(--bad)">não pago</b>` : fR$(x.x.pago)}</td>
         <td class="n" style="${saldoAlto(x.x) ? "color:var(--warn);font-weight:700" : ""}">${fR$(x.x.saldo)}</td></tr>`).join("")}</tbody></table></div>
       ${lin.some(x => x.comp > 1) ? `<p class="src" style="margin-top:8px">* A mesma associação atende mais de uma escola: o valor de ${ANO_ATUAL} é o da associação inteira.</p>` : ""}</div>
@@ -1762,7 +1888,7 @@ function estadoPdde(){
   const ano0 = PD_META.ano_pago;
   const porMun = {};
   for (const [cod, v] of Object.entries(S.pdde.e)){ const r = S.rows.find(y => y[C.codigo] === +cod); if (!r) continue; const x = pdE(cod);
-    const m = porMun[r[C.municipio]] ||= {esc: 0, pago: 0, saldo: 0, altos: 0, alunos: 0}; m.esc++; m.pago += x.pago || 0; m.saldo += x.saldo || 0; m.alunos += x.alunos || 0; if (saldoAlto(x)) m.altos++; }
+    const m = porMun[r[C.municipio]] ||= {esc: 0, pago: 0, saldo: 0, altos: 0, alunos: 0, pend: 0}; m.esc++; if (cadPend(x)) m.pend++; m.pago += x.pago || 0; m.saldo += x.saldo || 0; m.alunos += x.alunos || 0; if (saldoAlto(x)) m.altos++; }
   const lin = Object.entries(porMun).map(([m, d]) => ({m: +m, ...d, ano: trIdx(ANO_ATUAL).reduce((t, i) => t + (S.transf?.m?.[m]?.pdde?.[i] || 0), 0)}));
   const tot = k => lin.reduce((t, x) => t + x[k], 0);
   const ord = {saldo: (a, b) => b.saldo - a.saldo, nome: (a, b) => semAcento(nomeMun(a.m)).localeCompare(semAcento(nomeMun(b.m))), ano: (a, b) => b.ano - a.ano, aluno: (a, b) => a.pago / (a.alunos || 1) - b.pago / (b.alunos || 1)}[S.pdOrd] || (() => 0);
@@ -1772,23 +1898,24 @@ function estadoPdde(){
       <div class="kpi"><div class="k">${T("pddebasico", "PDDE Básico")} ${ano0}</div><div class="v">${fMi(tot("pago"))}</div><div class="s">${fmt(tot("esc"))} escolas públicas</div></div>
       <div class="kpi ${tot("altos") ? "atencao" : ""}"><div class="k">${T("saldopdde", "Saldo parado")} fim de ${PD_META.ano_saldo}</div><div class="v">${fMi(tot("saldo"))}</div><div class="s">${fmt(tot("altos"))} escolas com saldo alto</div></div>
       <div class="kpi"><div class="k">Por aluno · ${ano0}</div><div class="v">${fR$(tot("pago") / Math.max(1, tot("alunos")))}</div><div class="s">PDDE Básico</div></div>
+      ${PD_META.ano_cadastro ? `<div class="kpi ${tot("pend") ? "atencao" : ""}"><div class="k">${T("cadpdde", "Cadastro não atualizado")}</div><div class="v">${fmt(tot("pend"))}</div><div class="s">escolas, exercício ${PD_META.ano_cadastro} (FNDE)</div></div>` : ""}
     </div>
     <div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
       <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["saldo", "Maior saldo parado"], ["ano", `Mais recebido em ${ANO_ATUAL}`], ["aluno", "Menos por aluno"], ["nome", "Nome"]].map(([k, t]) => `<button type="button" class="chip" data-pdord="${k}" aria-pressed="${S.pdOrd === k}"><i></i>${t}</button>`).join("")}</div>
-      <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">Escolas</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Básico ${ano0}</th><th class="n">Saldo parado</th><th class="n">Saldo alto</th></tr></thead>
-      <tbody>${lin.map(x => `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n">${fmt(x.esc)}</td><td class="n">${fR$(x.ano)}</td><td class="n">${fR$(x.pago)}</td><td class="n">${fR$(x.saldo)}</td><td class="n" style="${x.altos ? "color:var(--warn);font-weight:700" : ""}">${x.altos}</td></tr>`).join("")}</tbody></table></div></div>`;
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">Escolas</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">Básico ${ano0}</th><th class="n">Saldo parado</th><th class="n">Saldo alto</th>${PD_META.ano_cadastro ? `<th class="n">${T("cadpdde", "Cadastro não<br>atualizado")}</th>` : ""}</tr></thead>
+      <tbody>${lin.map(x => `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n">${fmt(x.esc)}</td><td class="n">${fR$(x.ano)}</td><td class="n">${fR$(x.pago)}</td><td class="n">${fR$(x.saldo)}</td><td class="n" style="${x.altos ? "color:var(--warn);font-weight:700" : ""}">${x.altos}</td>${PD_META.ano_cadastro ? `<td class="n" style="${x.pend ? "color:var(--warn);font-weight:700" : ""}">${x.pend}</td>` : ""}</tr>`).join("")}</tbody></table></div></div>`;
 }
 function cardPdde(){
   if (!PD_META || !S.pdde) return "";
-  let ano = 0, pago = 0, saldo = 0, altos = 0, n = 0;
-  if (S.mun){ const lin = escolasPdde(S.mun); if (!lin.length) return ""; n = lin.length; pago = lin.reduce((t, x) => t + (x.x.pago || 0), 0); saldo = lin.reduce((t, x) => t + (x.x.saldo || 0), 0); altos = lin.filter(x => saldoAlto(x.x)).length;
+  let ano = 0, pago = 0, saldo = 0, altos = 0, n = 0, pend = 0;
+  if (S.mun){ const lin = escolasPdde(S.mun); if (!lin.length) return ""; n = lin.length; pago = lin.reduce((t, x) => t + (x.x.pago || 0), 0); saldo = lin.reduce((t, x) => t + (x.x.saldo || 0), 0); altos = lin.filter(x => saldoAlto(x.x)).length; pend = lin.filter(x => cadPend(x.x)).length;
     ano = trIdx(ANO_ATUAL).reduce((t, i) => t + (S.transf?.m?.[S.mun]?.pdde?.[i] || 0), 0); }
-  else { for (const [cod, v] of Object.entries(S.pdde.e)){ const x = pdE(cod); n++; pago += x.pago || 0; saldo += x.saldo || 0; if (saldoAlto(x)) altos++; }
+  else { for (const [cod, v] of Object.entries(S.pdde.e)){ const x = pdE(cod); n++; pago += x.pago || 0; saldo += x.saldo || 0; if (saldoAlto(x)) altos++; if (cadPend(x)) pend++; }
     ano = Object.values(S.transf?.m || {}).reduce((t, d) => t + trIdx(ANO_ATUAL).reduce((u, i) => u + (d.pdde?.[i] || 0), 0), 0); }
-  return `<button type="button" class="rs-card ${altos ? "rs-atencao" : ""}" data-ir="pdde">
+  return `<button type="button" class="rs-card ${pend || altos ? "rs-atencao" : ""}" data-ir="pdde">
     <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg></span><h3>Dinheiro na escola</h3></header>
     <div class="rs-big">${fR$(ano)}<small>recebidos pelas escolas pelo ${T("pdde", "PDDE")} em ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} (parcial)</small></div>
-    ${rsTab([[`Ano fechado de ${PD_META.ano_pago}`], ["Valor", "n"]], [[T("pddebasico", "PDDE Básico"), `<b>${fR$(pago)}</b>`], [T("saldopdde", "Saldo nas contas"), `<b class="${altos ? "warn" : ""}">${fR$(saldo)}</b>`], ["Escolas com saldo alto", `<b class="${altos ? "warn" : "ok"}">${altos} de ${n}</b>`]])}
+    ${rsTab([[`Ano fechado de ${PD_META.ano_pago}`], ["Valor", "n"]], [[T("pddebasico", "PDDE Básico"), `<b>${fR$(pago)}</b>`], [T("saldopdde", "Saldo nas contas"), `<b class="${altos ? "warn" : ""}">${fR$(saldo)}</b>`], ["Escolas com saldo alto", `<b class="${altos ? "warn" : "ok"}">${altos} de ${n}</b>`], ...(PD_META.ano_cadastro ? [[T("cadpdde", "Cadastro não atualizado"), `<b class="${pend ? "warn" : "ok"}">${pend ? pend + " escola" + (pend > 1 ? "s" : "") : "nenhuma ✓"}</b>`]] : [])])}
     <span class="rs-link">Ver dinheiro na escola →</span>
     <span class="rs-periodo">${ICO_CAL}<span>Portal da Transparência e FNDE · ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} e ${PD_META.ano_pago} (ano fechado)</span></span></button>`;
 }
@@ -1800,15 +1927,16 @@ function caixaPddeFicha(cod){
     <span>Recebido em ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</span><span>${fR$(ano)}</span>
     <span>${T("pddebasico", "PDDE Básico")} ${PD_META.ano_pago}</span><span>${x.estimado > 0 && !x.pago ? `<b style="color:var(--bad)">previsto ${fR$(x.estimado)} e não pago</b>` : `${fR$(x.pago)} em ${x.parcelas} parcela${x.parcelas === 1 ? "" : "s"}`}</span>
     <span>${T("saldopdde", "Saldo na conta")} (fim de ${PD_META.ano_saldo})</span><span style="${saldoAlto(x) ? "color:var(--warn)" : ""}">${fR$(x.saldo)}${saldoAlto(x) ? " · alto" : ""}</span>
-  </div></div>`;
+    ${PD_META.ano_cadastro && x.cad != null ? `<span>${T("cadpdde", "Cadastro do PDDE " + PD_META.ano_cadastro)}</span><span>${x.cad ? "atualizado ✓" : `<b style="color:var(--warn)">não atualizado</b>`}</span>` : ""}
+  </div>${cadPend(x) ? `<p class="src" style="margin-top:6px">A atualização anual do cadastro é exigência do FNDE e a pendência pode atrasar ou suspender repasses. Quem resolve é a direção da escola com a associação, no PDDE Interativo. Situação no FNDE em ${dataCurta(PD_META.atualizado.cadastro)}.</p>` : ""}</div>`;
 }
 async function exportarCSVPdde(){
   if (!PD_META || !S.pdde) return toast("Sem dados para exportar");
   const n = v => v == null ? "" : String(Math.round(v * 100) / 100).replace(".", ",");
-  const cab = ["Código INEP", "Escola", "Município", "Rede", "Alunos", "CNPJ da associação", "Associação", `Recebido ${ANO_ATUAL} (até ${TR_META?.ultimo || ""})`, `PDDE Básico estimado ${PD_META.ano_estimado}`, `PDDE Básico pago ${PD_META.ano_pago}`, "Parcelas", `Saldo fim ${PD_META.ano_saldo}`];
+  const cab = ["Código INEP", "Escola", "Município", "Rede", "Alunos", "CNPJ da associação", "Associação", `Recebido ${ANO_ATUAL} (até ${TR_META?.ultimo || ""})`, `PDDE Básico estimado ${PD_META.ano_estimado}`, `PDDE Básico pago ${PD_META.ano_pago}`, "Parcelas", `Saldo fim ${PD_META.ano_saldo}`, `Cadastro ${PD_META.ano_cadastro || ""} atualizado`];
   const linhas = [];
   for (const cod of Object.keys(S.pdde.e)){ const r = S.rows.find(y => y[C.codigo] === +cod); if (S.mun && (!r || r[C.municipio] !== S.mun)) continue; const x = pdE(cod);
-    linhas.push([cod, r ? r[C.nome] : "", r ? nomeMun(r[C.municipio]) : "", r ? REDE[r[C.rede]] : "", x.alunos, x.uex?.[0] || "", x.uex?.[1] || "", n(x.uex ? uex2026(x.uex[0]) : 0), n(x.estimado), n(x.pago), x.parcelas, n(x.saldo)]); }
+    linhas.push([cod, r ? r[C.nome] : "", r ? nomeMun(r[C.municipio]) : "", r ? REDE[r[C.rede]] : "", x.alunos, x.uex?.[0] || "", x.uex?.[1] || "", n(x.uex ? uex2026(x.uex[0]) : 0), n(x.estimado), n(x.pago), x.parcelas, n(x.saldo), x.cad == null ? "" : x.cad ? "sim" : "não"]); }
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-pdde-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
@@ -1925,10 +2053,10 @@ function tabelaEscolasIdeb(){
   const ult = iUlt(), anos = IDEB_META.anos, lin = linhasEscolasIdeb();
   if (!lin.length) return `<div class="box"><h3>Ideb por escola</h3><p class="src">Nenhuma escola de ${esc(lugar())} com Ideb de ${ETAPA_NOME[S.etapa].toLowerCase()}.</p></div>`;
   return `<div class="box"><h3>Ideb por escola <small>${ETAPA_NOME[S.etapa].toLowerCase()} · toque para abrir a ficha</small></h3><div class="tablewrap"><table>
-    <thead><tr><th>Escola</th><th>Rede</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th></tr></thead>
+    <thead><tr><th>Escola</th><th>Rede</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th>${S.prof ? `<th class="n">${T("inse", "Nível<br>socioec.")}</th>` : ""}</tr></thead>
     <tbody>${lin.map(x => `<tr class="click" data-esc="${x.r[C.codigo]}"><td>${esc(tituloEscola(x.r[C.nome]))}</td><td>${REDE[x.r[C.rede]]}</td><td class="n">${f1(x.a)}</td>
       <td class="n ideb-n ${x.v != null && x.v < 5 && S.etapa === "ai" ? "ideb-baixo" : ""}">${f1(x.v)}${x.v != null && x.a != null ? (x.v > x.a ? " ▲" : x.v < x.a ? " ▼" : "") : ""}</td>
-      <td class="n">${f0(val(x.s, "mat", ult))}</td><td class="n">${f0(val(x.s, "port", ult))}</td></tr>`).join("")}</tbody></table></div>
+      <td class="n">${f0(val(x.s, "mat", ult))}</td><td class="n">${f0(val(x.s, "port", ult))}</td>${S.prof ? `<td class="n">${ROM[prE(x.r[C.codigo])?.inse?.[1]] || "–"}</td>` : ""}</tr>`).join("")}</tbody></table></div>
     <p class="src" style="margin-top:8px">Escolas sem Ideb não aparecem: o INEP só calcula quando há pelo menos 10 alunos na prova e participação suficiente.</p></div>`;
 }
 function estadoIdeb(){
@@ -1940,7 +2068,7 @@ function estadoIdeb(){
   const kp = ["Total", "Pública", "Estadual", "Municipal", "Privada"].filter(r => temIdeb(uf[r]));
   return `<div class="kpis">${kp.slice(0, 4).map(r => `<div class="kpi"><div class="k">${esc(siglaUF(S.uf))} · ${r === "Total" ? "todas as redes" : "rede " + r.toLowerCase()}</div><div class="v">${f1(val(uf[r], "ideb", ult))}</div>${variacao(uf[r])}<div class="s">Brasil: ${f1(val(br[r], "ideb", ult))}</div></div>`).join("")}</div>
     <div class="box"><h3>Municípios de ${esc(nomeUF(S.uf))} <small>rede ${(rede || "").toLowerCase()}, ${ETAPA_NOME[et].toLowerCase()} · toque para abrir</small></h3>
-    <div class="tablewrap" style="max-height:520px;overflow:auto"><table><thead><tr><th class="n">#</th><th>Município</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th></tr></thead>
+    <div class="tablewrap" style="max-height:520px;overflow:auto"><table><thead><tr><th class="n">#</th><th>Município</th><th class="n">${anos[ult - 1]}</th><th class="n">${anos[ult]}</th><th class="n">Mat.</th><th class="n">Port.</th>${S.prof ? `<th class="n">${T("inse", "Nível<br>socioec.")}</th>` : ""}</tr></thead>
     <tbody>${lin.map((x, i) => `<tr class="click" data-mun="${x.m}"><td class="n">${i + 1}</td><td>${esc(nomeMun(x.m))}</td><td class="n">${f1(x.a)}</td>
       <td class="n ideb-n ${x.v != null && x.v < 5 && et === "ai" ? "ideb-baixo" : ""}">${f1(x.v)}</td><td class="n">${f0(val(x.s, "mat", ult))}</td><td class="n">${f0(val(x.s, "port", ult))}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
@@ -2106,6 +2234,8 @@ function renderGastos(){
   const envIco = st.nivel ? ICO.info : ICO_CAL;
   el.innerHTML = cabecalhoG(titulo, periodoGastos(), acoes) + `
     <div class="envio ${st.cls}">${envIco}<div><b>Envio ao ${T("siope", "SIOPE")}:</b> ${esc(st.txt)}</div></div>
+    ${(() => { if (!S.pdde || !PD_META?.ano_cadastro) return ""; const p = escolasPdde(S.mun).filter(x => cadPend(x.x)).length; if (!p) return "";
+      return `<div class="envio atrasado">${ICO.info}<div><b>${p} escola${p > 1 ? "s" : ""} da cidade com o ${T("cadpdde", "cadastro do PDDE")} não atualizado</b>, o que pode atrasar o dinheiro que vai direto para a escola. <a href="#pdde" data-ir="pdde">Ver na tela PDDE →</a></div></div>`; })()}
     ${(() => {
       // 2026: só entre os municípios que já enviaram o mesmo bimestre (parcial se compara com parcial)
       const parc = u ? gv(b, "mde") : null;
@@ -2252,7 +2382,8 @@ function abrirFicha(cod, {semHistorico} = {}){
       ${caixaPddeFicha(cod)}
       <div class="box"><h3>Professores <small>(na data do Censo)</small></h3><div class="dl">
         ${n(C.docentes, "Professores")}${n(C.docentes_superior, "Com curso superior")}${n(C.docentes_licenciatura, "Com licenciatura")}
-        ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}</div></div>
+        ${n(C.docentes_concursados, "Concursados")}${n(C.docentes_contratados, "Contratados temporários")}
+        ${caixaProfFicha(cod)}</div>${prE(cod) ? `<p class="src" style="margin-top:6px">Indicadores do INEP, Censo Escolar ${PR_META.ano}. Toque nos termos sublinhados para entender.</p>` : ""}</div>
       <div class="box"><h3>Estrutura</h3><div class="infra">${infraLinhas}</div>
         <div class="dl" style="margin-top:10px">${n(C.salas_climatizadas, "Salas climatizadas")}${n(C.salas_acessiveis, "Salas acessíveis")}${n(C.computadores_alunos, "Computadores e tablets para alunos")}
         ${n(C.prof_bibliotecario, "Bibliotecários")}${n(C.prof_psicologo, "Psicólogos")}${n(C.prof_assist_social, "Assistentes sociais")}${n(C.prof_nutricionista, "Nutricionistas")}</div></div>
@@ -2352,6 +2483,7 @@ async function iniciar(){
     [ME_META, TR_META, PD_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null), getJSON("data/pdde/meta.json").catch(() => null)]);
     [TP_META, LC_META] = await Promise.all([getJSON("data/transporte/meta.json").catch(() => null), getJSON("data/locais/meta.json").catch(() => null)]);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
+    [PR_META, PR_BR] = await Promise.all([getJSON("data/professores/meta.json").catch(() => null), getJSON("data/professores/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
     META = meta; UFS = mj.ufs;
