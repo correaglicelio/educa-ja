@@ -30,7 +30,8 @@ PORTAL = BASE + "?Portal&PortalPath=" + urllib.parse.quote("/shared/Censo da Edu
 ANALISE = "/shared/Censo da Educação Básica/Catálogo das Escolas/Análises/Lista das Escolas/Análise - Tabela da lista das escolas - Detalhado"
 CSV_URL = BASE + "?Go&Path=" + urllib.parse.quote(ANALISE) + "&Action=Download&Format=csv&Extension=.csv"
 SAIDA = c.DADOS_PUBLICOS / "locais"
-UA = {"User-Agent": "Mozilla/5.0 (EducaJa; dados abertos)"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+      "Accept-Language": "pt-BR,pt;q=0.9", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
 
 
 def baixar_catalogo() -> str:
@@ -46,7 +47,11 @@ def baixar_catalogo() -> str:
                 campos = json.loads(m.group(2))
                 destino = urllib.parse.urljoin(BASE, m.group(1))
                 corpo = urllib.parse.urlencode(campos).encode()
-                op.open(urllib.request.Request(destino, data=corpo, headers={**UA, "Content-Type": "application/x-www-form-urlencoded"}), timeout=120).read()
+                resp = op.open(urllib.request.Request(destino, data=corpo, headers={**UA, "Content-Type": "application/x-www-form-urlencoded"}), timeout=120).read().decode("utf-8", "replace")
+                titulo = re.search(r"<title>(.*?)</title>", resp, re.S)
+                c.log(f"   sessão: {sorted(k.name for k in jar)}; resposta: {titulo.group(1).strip() if titulo else resp[:80]!r}")
+            else:
+                c.log(f"   página inicial sem formulário de acesso: {pagina[:200]!r}")
             with op.open(urllib.request.Request(CSV_URL, headers=UA), timeout=900) as r:
                 tipo = r.headers.get("Content-Type", "")
                 dados = r.read()
