@@ -249,6 +249,21 @@ tr.tot td{font-weight:700; border-bottom:0}
 .bubble::before{content:""; position:absolute; left:var(--ax, 50%); width:10px; height:10px; background:var(--ink); transform:translateX(-50%) rotate(45deg)}
 .bubble[data-pos="top"]::before{bottom:-5px}
 .bubble[data-pos="bottom"]::before{top:-5px}
+/* mapa das escolas (Leaflet + OpenStreetMap) */
+#e-map{height:440px; border-radius:var(--r); overflow:hidden; background:var(--sunk); border:1px solid var(--line)}
+@media (max-width:600px){ #e-map{height:340px} }
+.leaflet-container{font-family:var(--f-body)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+.leaflet-popup-content{margin:12px 14px; font-size:13.5px; line-height:1.45}
+.leaflet-popup-content b{font-size:14.5px}
+.leaflet-popup-content .btn{margin-top:8px; padding:6px 12px; font-size:13px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+:root[data-tema="escuro"] .leaflet-tile-pane, :root.escuro .leaflet-tile-pane{filter:brightness(.75) invert(1) contrast(2.6) hue-rotate(200deg) saturate(.35) brightness(.75)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .leaflet-tile-pane{filter:brightness(.75) invert(1) contrast(2.6) hue-rotate(200deg) saturate(.35) brightness(.75)} }
+:root[data-theme="dark"] .leaflet-tile-pane{filter:brightness(.75) invert(1) contrast(2.6) hue-rotate(200deg) saturate(.35) brightness(.75)}
+.mapa-leg{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--muted); margin-top:10px}
+.mapa-leg i{display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px; border:2px solid #fff; box-shadow:0 0 0 1px rgb(0 0 0 / .15)}
+.ficha .contato a{color:var(--accent); font-weight:600}
 /* mini-tabela dos cards (opção A) */
 .rs-tab{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
 .rs-tab th br + span{font-size:11px}
@@ -544,6 +559,7 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
+let LC_META = null; const LOCAIS = new Map();
 let ME_META = null, TR_META = null, PD_META = null, TP_META = null; const MERENDA = new Map(), TRANSF = new Map(), PDDE = new Map(), TRANSP = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
@@ -603,6 +619,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarLocais(uf){
+  if (!LC_META || !LC_META.ufs.includes(uf)) return null;
+  if (!LOCAIS.has(uf)) LOCAIS.set(uf, getJSON(`data/locais/${uf}.json`).catch(e => { LOCAIS.delete(uf); throw e; }));
+  return LOCAIS.get(uf);
+}
 async function carregarTransp(uf){
   if (!TP_META || !TP_META.ufs.includes(uf)) return null;
   if (!TRANSP.has(uf)) TRANSP.set(uf, getJSON(`data/transporte/${uf}.json`).catch(e => { TRANSP.delete(uf); throw e; }));
@@ -661,7 +682,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde, S.transp] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null), carregarTransp(uf).catch(() => null)]); juntarTransf(); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde, S.transp, S.locais] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null), carregarTransp(uf).catch(() => null), carregarLocais(uf).catch(() => null)]); juntarTransf(); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -928,6 +949,10 @@ function renderEscolas(){
             ${S.mun ? `<span class="sub">${fmt(x.n)} de ${fmt(x.tot)} escolas · ${esc(siglaUF(S.uf))}: ${u.p == null ? "–" : Math.round(u.p) + "%"}</span>` : `<span class="sub">${fmt(x.n)} de ${fmt(x.tot)} escolas</span>`}</div>`; }).join("")}</div>
       </div>
     </div>
+    ${LC_META && S.locais ? `<div class="box"><h3>Mapa das escolas <small id="e-map-info">em atividade, conforme os filtros da lista abaixo</small></h3>
+      <div id="e-map" role="region" aria-label="Mapa das escolas"></div>
+      <div class="mapa-leg">${ORDEM_REDE.map(k => `<span><i style="background:${COR_REDE[k]}"></i>${REDE[k]}</span>`).join("")}<span>tamanho do ponto = número de alunos</span></div>
+      <p class="src" style="margin-top:8px">${esc(LC_META.aviso)} Fonte: ${esc(LC_META.fonte)}.</p></div>` : ""}
     ${S.mun ? "" : tabelaMunicipios()}
     <div class="box" id="e-lista-box"><h3>Lista de escolas</h3>
       <div class="filtros">
@@ -952,7 +977,45 @@ function tabelaMunicipios(){
     <thead><tr><th>Município</th><th class="n">Escolas</th><th class="n">Matrículas</th><th class="n">Públicas com internet p/ alunos</th><th class="n">Públicas sem o básico</th></tr></thead>
     <tbody>${lin.map(([m, o]) => `<tr class="click" data-mun="${m}"><td>${esc(nomeMun(m))}</td><td class="n">${fmt(o.esc)}</td><td class="n">${fmt(o.mat)}</td><td class="n">${o.pub ? pct(o.net, o.pub) + "%" : "–"}</td><td class="n" style="${o.sem ? "color:var(--bad); font-weight:700" : ""}">${fmt(o.sem)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
+/* ===================== mapa das escolas ===================== */
+let MAPA = null, CAMADA = null, LEAFLET = null;
+function garantirLeaflet(){
+  if (window.L) return Promise.resolve();
+  if (LEAFLET) return LEAFLET;
+  const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.append(css);
+  LEAFLET = new Promise((ok, erro) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"; sc.onload = ok; sc.onerror = erro; document.head.append(sc); });
+  return LEAFLET;
+}
+const locEsc = cod => S.locais?.[cod] || null;
+async function desenharMapa(){
+  const el = $("#e-map"); if (!el || !S.locais) return;
+  try { await garantirLeaflet(); } catch { el.innerHTML = `<p class="src" style="padding:16px">Não foi possível carregar o mapa (sem internet?).</p>`; return; }
+  if (!document.body.contains(el)) return;
+  if (MAPA && MAPA.getContainer() !== el){ MAPA.remove(); MAPA = null; }
+  if (!MAPA){
+    MAPA = L.map(el, {preferCanvas: true, scrollWheelZoom: false, zoomControl: true});
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(MAPA);
+    el.addEventListener("click", () => MAPA.scrollWheelZoom.enable(), {once: true});
+    new ResizeObserver(() => MAPA && MAPA.invalidateSize()).observe(el);
+  }
+  if (CAMADA) CAMADA.remove();
+  CAMADA = L.featureGroup().addTo(MAPA);
+  const rows = filtradas().filter(r => ativa(r));
+  let com = 0;
+  for (const r of rows){
+    const l = locEsc(r[C.codigo]); if (!l || l[0] == null) continue;
+    com++;
+    const raio = Math.max(4, Math.min(12, 3 + Math.sqrt(r[C.mat_total] || 0) / 4));
+    L.circleMarker([l[0], l[1]], {radius: raio, color: "#fff", weight: 1.5, fillColor: COR_REDE[r[C.rede]].startsWith("var") ? cssVar(COR_REDE[r[C.rede]].slice(4, -1)) : COR_REDE[r[C.rede]], fillOpacity: .9})
+      .bindPopup(`<b>${esc(tituloEscola(r[C.nome]))}</b><br>${REDE[r[C.rede]]} · ${fmt(r[C.mat_total] || 0)} alunos${l[4] ? "<br><small>localização aproximada (OpenStreetMap)</small>" : ""}<br><button type="button" class="btn" data-esc="${r[C.codigo]}">Ver ficha da escola</button>`)
+      .addTo(CAMADA);
+  }
+  const info = $("#e-map-info"); if (info) info.textContent = `${fmt(com)} de ${fmt(rows.length)} escolas em atividade têm localização${rows.length - com ? `; ${fmt(rows.length - com)} sem localização no INEP` : ""}`;
+  if (com) MAPA.fitBounds(CAMADA.getBounds().pad(.08), {maxZoom: 15}); else MAPA.setView([-15.6, -56.1], 5);
+}
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function renderLista(){
+  if ($("#e-map")) desenharMapa();
   const lista = $("#e-lista"); if (!lista) return;
   const rows = filtradas(), vis = rows.slice(0, S.f.lim);
   const mat = rows.reduce((s, r) => s + (ativa(r) ? r[C.mat_total] || 0 : 0), 0);
@@ -2155,6 +2218,14 @@ function abrirFicha(cod, {semHistorico} = {}){
         <button type="button" class="pill copiar" data-copiar="${r[C.codigo]}" title="Copiar o link desta escola">Código INEP ${r[C.codigo]} · copiar link</button></div>
     </div>
     <div class="ficha-corpo">
+      ${(() => { const l = locEsc(cod); if (!l || (!l[2] && !l[3])) return "";
+        const tel = (l[3] || "").replace(/\D/g, "");
+        return `<div class="box contato">
+          ${l[2] ? `<p style="margin:0 0 10px;font-size:14.5px;line-height:1.45"><span style="display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Endereço</span>${esc(tituloEscola(l[2]).replace(/\b(Mt|Ms|Go|Ro|Ac|Am|Pa|Sp|Rj|Mg|Pr|Sc|Rs|Ba|Pe|Ce|Pi|Ma|Pb|Rn|Al|Se|Es|To|Ap|Rr|Df)$/, m => m.toUpperCase()))}</p>` : ""}
+          <div class="dl">
+          ${l[3] ? `<span>Telefone</span><span><a href="tel:+55${tel}">${esc(l[3])}</a></span>` : ""}
+          ${l[0] != null ? `<span>Mapa</span><span><a href="https://www.openstreetmap.org/?mlat=${l[0]}&mlon=${l[1]}#map=17/${l[0]}/${l[1]}" target="_blank" rel="noopener">ver no mapa</a> · <a href="https://www.google.com/maps/dir/?api=1&destination=${l[0]},${l[1]}" target="_blank" rel="noopener">como chegar</a>${l[4] ? " <small style='color:var(--muted)'>(localização aproximada)</small>" : ""}</span>` : ""}
+        </div><p class="src" style="margin-top:6px">Endereço e telefone informados pela escola ao INEP. Confira antes de ir.</p></div>`; })()}
       <div class="nums">
         <div class="num"><b>${fmt(r[C.mat_total] || 0)}</b><span>alunos</span></div>
         <div class="num"><b>${fmt(r[C.turmas] || 0)}</b><span>turmas</span></div>
@@ -2269,7 +2340,7 @@ async function iniciar(){
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
     [ME_META, TR_META, PD_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null), getJSON("data/pdde/meta.json").catch(() => null)]);
-    TP_META = await getJSON("data/transporte/meta.json").catch(() => null);
+    [TP_META, LC_META] = await Promise.all([getJSON("data/transporte/meta.json").catch(() => null), getJSON("data/locais/meta.json").catch(() => null)]);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
