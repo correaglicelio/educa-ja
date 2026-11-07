@@ -23,6 +23,7 @@ from __future__ import annotations
 import csv
 import io
 import sys
+import time
 import zipfile
 from datetime import date
 from pathlib import Path
@@ -89,15 +90,36 @@ def main() -> None:
     c.log(f"Educa Já - repasses do FNDE mês a mês (Portal da Transparência) - UFs: {'todas' if len(ufs) == 27 else ', '.join(ufs)}")
     casa = c.CasadorMunicipios()
     todos = meses_ate_hoje()
-    meses, por_mes = [], {}
+    por_mes = {}
+    falhou = []
     for i, ref in enumerate(todos):
         linhas = baixar_mes(ref, recente=i >= len(todos) - 3)
         if linhas is None:
-            continue
-        meses.append(ref)
-        por_mes[ref] = linhas
+            falhou.append(ref)
+        else:
+            por_mes[ref] = linhas
+        time.sleep(4)          # o Portal bloqueia (erro 405) quando os pedidos vêm em sequência rápida
+    for rodada in (1, 2):      # segunda e terceira tentativas para os meses que falharam
+        if not falhou:
+            break
+        c.log(f"   tentando de novo ({rodada}): {', '.join(falhou)}")
+        time.sleep(90 * rodada)
+        resto = []
+        for ref in falhou:
+            linhas = baixar_mes(ref, recente=True)
+            if linhas is None:
+                resto.append(ref)
+            else:
+                por_mes[ref] = linhas
+            time.sleep(10)
+        falhou = resto
+    # o mês atual pode ainda não ter arquivo: isso não é falha
+    faltando = [r for r in falhou if r != todos[-1]]
+    meses = sorted(por_mes)
     if not meses:
         raise RuntimeError("Nenhum arquivo mensal do Portal da Transparência foi baixado")
+    if faltando:
+        c.log(f"   ATENÇÃO: meses que não foi possível baixar: {', '.join(faltando)} (a tela não soma esses anos)")
     c.log(f"   meses: {meses[0]} a {meses[-1]} ({len(meses)})")
     n = len(meses)
     m: dict[str, dict] = {}
@@ -137,6 +159,7 @@ def main() -> None:
     antigo = c.ler_json(SAIDA / "meta.json", {}) or {}
     c.salvar_json(SAIDA / "meta.json", {
         "gerado_em": c.agora_iso(), "meses": meses_fmt, "ultimo": meses_fmt[-1],
+        "faltando": [f"{r[:4]}-{r[4:]}" for r in faltando],
         "ufs": sorted(set(antigo.get("ufs", [])) | set(gerados)), "programas": NOMES,
         "fonte": "Controladoria-Geral da União, Portal da Transparência: recursos transferidos (FNDE)",
         "aviso": "Valores pelo mês do pagamento. O mês mais recente pode estar incompleto, porque o Portal registra "

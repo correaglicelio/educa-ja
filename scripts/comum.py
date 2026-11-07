@@ -20,6 +20,7 @@ import json
 import os
 import ssl
 import struct
+import re
 import sys
 import time
 import unicodedata
@@ -469,6 +470,7 @@ class CasadorMunicipios:
         return "".join(palavras).replace("DOESTE", "OESTE") + "|" + uf.upper()
 
     def codigo(self, nome: str, uf: str) -> int | None:
+        nome = re.sub(r"\s*\(.*?\)\s*", " ", nome).strip()      # "CAMPO GRANDE (EX AUGUSTO SEVERO)"
         k = chave_nome(nome, uf)
         if k in self.cache:
             return self.cache[k]

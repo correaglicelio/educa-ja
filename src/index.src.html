@@ -534,7 +534,7 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let ME_META = null; const MERENDA = new Map();
+let ME_META = null, TR_META = null; const MERENDA = new Map(), TRANSF = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
 const ENEM = new Map();
@@ -593,6 +593,17 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarTransf(uf){
+  if (!TR_META || !TR_META.ufs.includes(uf)) return null;
+  if (!TRANSF.has(uf)) TRANSF.set(uf, getJSON(`data/transferencias/${uf}.json`).catch(e => { TRANSF.delete(uf); throw e; }));
+  return TRANSF.get(uf);
+}
+// os repasses mês a mês (Portal da Transparência) completam os dados da merenda do FNDE
+function juntarTransf(){
+  if (!S.merenda || !S.transf) return;
+  for (const [m, d] of Object.entries(S.transf.m)) if (d.pnae) (S.merenda.m[m] ||= {}).t = d.pnae;
+  if (S.transf.estado?.pnae) (S.merenda.estado ||= {}).t = S.transf.estado.pnae;
+}
 async function carregarMerenda(uf){
   if (!ME_META || !ME_META.ufs.includes(uf)) return null;
   if (!MERENDA.has(uf)) MERENDA.set(uf, getJSON(`data/merenda/${uf}.json`).catch(e => { MERENDA.delete(uf); throw e; }));
@@ -630,7 +641,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); S.transf = await carregarTransf(uf).catch(() => null); juntarTransf(); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -1426,11 +1437,49 @@ async function exportarCSVFluxo(){
 /* ===================== merenda (PNAE) ===================== */
 const ANO_ATUAL = new Date().getFullYear();
 const meReg = mun => mun ? S.merenda?.m?.[mun] : S.merenda?.estado;
-const meAno = (reg, ano) => { const r = reg?.r?.[ano]; return r ? {alunos: r[0], escolas: r[1], valor: r[2], porAluno: r[0] ? r[2] / r[0] : null} : null; };
+const trIdx = ano => (TR_META?.meses || []).map((m, i) => m.startsWith(ano + "-") ? i : -1).filter(i => i >= 0);
+// só usa o Portal num ano em que nenhum mês ficou faltando na coleta
+const usaTR = ano => !!(TR_META && S.transf && trIdx(ano).length && !(TR_META.faltando || []).some(m => m.startsWith(ano + "-")));
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const nomeMes = ym => { if (!ym) return ""; const [a, m] = ym.split("-"); return new Date(+a, +m - 1, 15).toLocaleDateString("pt-BR", {month: "long", year: "numeric"}); };
+// ano: valor pelo Portal da Transparência (mês a mês) quando houver; alunos e escolas do FNDE (ano mais próximo)
+function meAno(reg, ano){
+  const r = reg?.r?.[ano], tr = usaTR(ano);
+  const valor = tr ? (reg?.t ? trIdx(ano).reduce((s, i) => s + (reg.t[i] || 0), 0) : 0) : r?.[2];
+  if (valor == null || (!r && !tr)) return null;
+  let ref = r; if (!ref && reg?.r){ const anos = Object.keys(reg.r).map(Number).filter(a => a <= ano).sort((x, y) => y - x); ref = reg.r[anos[0]]; }
+  const alunos = ref?.[0] || null;
+  return {alunos, escolas: ref?.[1] ?? null, valor, porAluno: alunos ? valor / alunos : null, tr, alunosAno: r ? ano : null};
+}
+// meses do ano sem repasse, quando a maioria das cidades do estado recebeu (o último mês pode estar incompleto e não entra)
+function mesesSemRepasse(reg, ano){
+  if (!usaTR(ano) || !reg) return [];
+  const idx = trIdx(ano).filter(i => i < TR_META.meses.length - 1);
+  const outros = Object.values(S.merenda.m).filter(x => x.t);
+  return idx.filter(i => !(reg.t?.[i] > 0) && outros.filter(x => x.t[i] > 0).length >= outros.length * 0.7).map(i => MESES[+TR_META.meses[i].slice(5) - 1]);
+}
 const dataCurta = iso => iso ? new Date(iso).toLocaleDateString("pt-BR") : "–";
 const mesAno = iso => iso ? new Date(iso).toLocaleDateString("pt-BR", {month: "long", year: "numeric"}) : "";
-function periodoMerenda(){ return `Repasses de ${ANO_ATUAL} até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)`; }
-function fonteMerenda(){ return `Fonte: ${esc(ME_META.fonte)}. ${esc(ME_META.aviso)} Dados coletados em ${dataBR(ME_META.gerado_em)}.`; }
+function ateQuando(){ return usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : mesAno(ME_META.atualizado.repasses); }
+function periodoMerenda(){ return usaTR(ANO_ATUAL) ? `Repasses mês a mês até ${nomeMes(TR_META.ultimo)} e ${ANO_ATUAL - 1} (ano fechado)` : `Repasses de ${ANO_ATUAL} até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)`; }
+function fonteMerenda(){ return `Fontes: ${TR_META && S.transf ? `${esc(TR_META.fonte)} (valores de ${TR_META.meses[0].slice(0, 4)} em diante, ${esc(TR_META.aviso.charAt(0).toLowerCase() + TR_META.aviso.slice(1))}); ` : ""}${esc(ME_META.fonte)}. ${esc(ME_META.aviso)} Dados coletados em ${dataBR(ME_META.gerado_em)}.`; }
+function barrasMeses(reg){
+  const a1 = trIdx(ANO_ATUAL), a0 = trIdx(ANO_ATUAL - 1); if (!a0.length && !a1.length) return "";
+  const v1 = MESES.map((_, k) => { const i = a1.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
+  const v0 = MESES.map((_, k) => { const i = a0.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
+  const W = innerWidth < 600 ? 340 : 640, H = 200, ml = 6, mr = 6, mt = 24, mb = 24, bw = (W - ml - mr) / 12;
+  const max = Math.max(1, ...v1.filter(v => v != null), ...v0.filter(v => v != null)) * 1.15, y = v => mt + (max - v) * (H - mt - mb) / max;
+  const k = v => v >= 1e6 ? (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : Math.round(v / 1000) + " mil";
+  let g = "";
+  MESES.forEach((m, i) => { const x = ml + i * bw, w = bw * .36;
+    if (v0[i] != null) g += `<rect x="${x + bw * .12}" y="${y(v0[i])}" width="${w}" height="${y(0) - y(v0[i])}" rx="2" fill="color-mix(in srgb, var(--mc) 30%, var(--surface))"><title>${m}/${ANO_ATUAL - 1}: ${fR$(v0[i])}</title></rect>`;
+    if (v1[i] != null){ g += `<rect x="${x + bw * .5}" y="${y(v1[i])}" width="${w}" height="${Math.max(0, y(0) - y(v1[i]))}" rx="2" fill="var(--mc)"><title>${m}/${ANO_ATUAL}: ${fR$(v1[i])}</title></rect>`;
+      if (W > 400 && v1[i] > 0) g += `<text class="val" x="${x + bw * .5 + w / 2}" y="${y(v1[i]) - 5}" text-anchor="middle" style="font-size:10px">${k(v1[i])}</text>`;
+      if (v1[i] === 0) g += `<text x="${x + bw * .5 + w / 2}" y="${y(0) - 5}" text-anchor="middle" style="font-size:${W > 400 ? 11 : 9}px;fill:var(--bad);font-weight:700">0</text>`; }
+    g += `<text x="${x + bw / 2}" y="${H - 7}" text-anchor="middle" style="font-size:${W > 400 ? 12 : 10}px">${m}</text>`; });
+  return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Repasses da merenda por mês">${g}</svg>
+    <div class="legenda-m" style="margin:8px 0 0"><span><i style="width:10px;height:10px;background:var(--mc)"></i>${ANO_ATUAL}</span><span><i style="width:10px;height:10px;background:color-mix(in srgb, var(--mc) 30%, var(--surface))"></i>${ANO_ATUAL - 1}</span><span>pelo mês do pagamento</span></div>`;
+}
 function cabecalhoM(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg></span>
     <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
@@ -1462,13 +1511,16 @@ function renderMerenda(){
   // posição no estado: valor recebido por aluno no ano fechado
   const lista = Object.values(S.merenda.m).map(r => meAno(r, ANO_ATUAL - 1)?.porAluno).filter(v => v != null).sort((x, y) => y - x);
   const pos = a0?.porAluno != null ? lista.filter(v => v > a0.porAluno).length + 1 : null;
+  const faltam1 = mesesSemRepasse(reg, ANO_ATUAL), faltam0 = mesesSemRepasse(reg, ANO_ATUAL - 1);
   el.innerHTML = cabecalhoM(titulo, periodoMerenda(), acoes) + `
-    ${queda ? `<div class="envio atrasado">${ICO.info}<div><b>Repasse por aluno caiu ${queda}%</b> de ${ANO_ATUAL - 2} para ${ANO_ATUAL - 1} (de ${fR$(am.porAluno)} para ${fR$(a0.porAluno)}). O FNDE pode suspender ou atrasar parcelas, por exemplo, por pendência na prestação de contas ou no Conselho de Alimentação Escolar. Os dados abertos não dizem o motivo: vale perguntar à prefeitura ou ao conselho.</div></div>` : ""}
+    ${faltam1.length ? `<div class="envio grave">${ICO.info}<div><b>Sem repasse da merenda em ${faltam1.join(", ")} de ${ANO_ATUAL}</b>, meses em que a maioria das cidades de ${esc(siglaUF(S.uf))} recebeu. Os dados abertos não dizem o motivo: vale perguntar à prefeitura ou ao Conselho de Alimentação Escolar.</div></div>` : ""}
+    ${queda ? `<div class="envio atrasado">${ICO.info}<div><b>Repasse por aluno caiu ${queda}%</b> de ${ANO_ATUAL - 2} para ${ANO_ATUAL - 1} (de ${fR$(am.porAluno)} para ${fR$(a0.porAluno)}).${faltam0.length ? ` Em ${ANO_ATUAL - 1}, não houve repasse em ${faltam0.join(", ")}, meses em que a maioria das cidades do estado recebeu.` : ""} O FNDE pode suspender ou atrasar parcelas, por exemplo, por pendência na prestação de contas ou no Conselho de Alimentação Escolar. Os dados abertos não dizem o motivo: vale perguntar à prefeitura ou ao conselho.</div></div>` : ""}
     <div class="empilha">
-      <div class="box"><h3>${ANO_ATUAL}, ${T("parcial_me", "ano em curso")} <small>até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)}</small></h3>
+      <div class="box"><h3>${ANO_ATUAL}, ${T("parcial_me", "ano em curso")} <small>até ${ateQuando()}</small></h3>
         ${a1 ? rsTab([[""], ["Valor", "n"]], [[T("pnae", "Recebido do PNAE"), `<b>${fR$(a1.valor)}</b>`], ["Alunos atendidos", fmt(a1.alunos)], ["Escolas atendidas", fmt(a1.escolas)]])
-          : `<p class="src">Nenhum repasse de ${ANO_ATUAL} registrado até a última atualização do FNDE.</p>`}
-        <p class="src" style="margin-top:8px">O FNDE paga a merenda em parcelas ao longo do ano (10 parcelas, de fevereiro a novembro). O valor de ${ANO_ATUAL} cobre só as parcelas pagas até ${mesAno(ME_META.atualizado.repasses)}.</p></div>
+          : `<p class="src">Nenhum repasse de ${ANO_ATUAL} registrado.</p>`}
+        ${usaTR(ANO_ATUAL) ? barrasMeses(reg) : ""}
+        <p class="src" style="margin-top:8px">O FNDE paga a merenda em 10 parcelas por ano, de fevereiro a novembro. ${usaTR(ANO_ATUAL) ? `O mês de ${nomeMes(TR_META.ultimo)} pode estar incompleto.` : `O valor de ${ANO_ATUAL} cobre só as parcelas pagas até ${mesAno(ME_META.atualizado.repasses)}.`}</p></div>
       <div class="box"><h3>${T("anofechado", "Ano fechado")} de ${ANO_ATUAL - 1}</h3>
         ${a0 ? rsTab([[""], [String(ANO_ATUAL - 1), "n"], [String(ANO_ATUAL - 2), "n"]], [
           [T("pnae", "Recebido do PNAE"), `<b>${fR$(a0.valor)}</b>`, fR$(am?.valor)], ["Alunos atendidos", fmt(a0.alunos), fmt(am?.alunos)], ["Escolas atendidas", fmt(a0.escolas), fmt(am?.escolas)],
@@ -1507,7 +1559,7 @@ function estadoMerenda(){
     queda: (a, b) => ((a.a0?.porAluno ?? 0) / (a.am?.porAluno || 1)) - ((b.a0?.porAluno ?? 0) / (b.am?.porAluno || 1)), nut: (a, b) => (a.nut?.ativos || 0) - (b.nut?.ativos || 0)}[S.meOrd] || (() => 0);
   lin.sort(ord);
   return `<div class="kpis">
-      <div class="kpi"><div class="k">Prefeituras · ${ANO_ATUAL} até ${mesAno(ME_META.atualizado.repasses)}</div><div class="v">${fMi(tot("a1"))}</div><div class="s">em ${ano0}: ${fMi(tot("a0"))}</div></div>
+      <div class="kpi"><div class="k">Prefeituras · ${ANO_ATUAL} até ${ateQuando()}</div><div class="v">${fMi(tot("a1"))}</div><div class="s">em ${ano0}: ${fMi(tot("a0"))}</div></div>
       <div class="kpi"><div class="k">Governo do estado · ${ano0}</div><div class="v">${fMi(est?.valor)}</div><div class="s">${fmt(est?.alunos)} alunos · ${ANO_ATUAL} até agora: ${fMi(est1?.valor)}</div></div>
       <div class="kpi ${quedas ? "atencao" : ""}"><div class="k">Repasse por aluno caiu mais de 25%</div><div class="v">${fmt(quedas)}</div><div class="s">cidades, de ${ano0 - 1} para ${ano0}</div></div>
       <div class="kpi ${semRT ? "alerta" : ""}"><div class="k">Sem ${T("rt", "responsável técnico")}</div><div class="v">${fmt(semRT)}</div><div class="s">de ${fmt(lin.length)} prefeituras</div></div>
@@ -1525,22 +1577,25 @@ function cardMerenda(){
   const reg = meReg(S.mun); if (!reg) return "";
   const a1 = meAno(reg, ANO_ATUAL), a0 = meAno(reg, ANO_ATUAL - 1), am = meAno(reg, ANO_ATUAL - 2);
   const queda = S.mun && a0?.porAluno && am?.porAluno && a0.porAluno < am.porAluno * 0.75;
-  const semRT = S.mun && !reg.nut?.rt;
-  return `<button type="button" class="rs-card ${semRT ? "rs-alerta" : queda ? "rs-atencao" : ""}" data-ir="merenda">
+  const semRT = S.mun && !reg.nut?.rt, faltam = S.mun ? mesesSemRepasse(reg, ANO_ATUAL) : [];
+  return `<button type="button" class="rs-card ${semRT || faltam.length ? "rs-alerta" : queda ? "rs-atencao" : ""}" data-ir="merenda">
     <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg></span><h3>Merenda escolar</h3></header>
-    <div class="rs-big">${fR$(a1?.valor)}<small>recebidos do ${T("pnae", "PNAE")} em ${ANO_ATUAL} até ${mesAno(ME_META.atualizado.repasses)} (parcial)${S.mun ? "" : " · governo do estado"}</small></div>
+    <div class="rs-big">${fR$(a1?.valor)}<small>recebidos do ${T("pnae", "PNAE")} em ${ANO_ATUAL} até ${ateQuando()} (parcial)${S.mun ? "" : " · governo do estado"}</small></div>
     ${rsTab([[`Ano fechado de ${ANO_ATUAL - 1}`], ["Valor", "n"]], [[T("pnae", "Recebido"), `<b>${fR$(a0?.valor)}</b>`], [T("pnaealuno", "Por aluno"), `<b class="${queda ? "warn" : ""}">${fR$(a0?.porAluno)}</b>`],
       ...(S.mun ? [[T("nutri", "Nutricionistas"), `<b class="${semRT ? "bad" : "ok"}">${reg.nut?.ativos || 0}${semRT ? " · sem RT" : ""}</b>`]] : [])])}
-    ${queda ? `<p style="margin:0;font-size:13px;color:var(--warn)">Repasse por aluno caiu mais de 25% em relação a ${ANO_ATUAL - 2}.</p>` : ""}
+    ${faltam.length ? `<p style="margin:0;font-size:13px;color:var(--bad)">Sem repasse em ${faltam.join(", ")} de ${ANO_ATUAL}.</p>` : queda ? `<p style="margin:0;font-size:13px;color:var(--warn)">Repasse por aluno caiu mais de 25% em relação a ${ANO_ATUAL - 2}.</p>` : ""}
     <span class="rs-link">Ver merenda →</span>
-    <span class="rs-periodo">${ICO_CAL}<span>FNDE · ${ANO_ATUAL} até ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)</span></span></button>`;
+    <span class="rs-periodo">${ICO_CAL}<span>${usaTR(ANO_ATUAL) ? "Portal da Transparência e FNDE" : "FNDE"} · ${ANO_ATUAL} até ${ateQuando()} e ${ANO_ATUAL - 1} (ano fechado)</span></span></button>`;
 }
 async function exportarCSVMerenda(){
   if (!ME_META || !S.merenda) return toast("Sem dados para exportar");
   const n = v => v == null ? "" : String(v).replace(".", ",");
   const cab = ["Código IBGE", "Município", "Ano", "Alunos atendidos", "Escolas atendidas", "Valor recebido (R$)", "Por aluno (R$)"];
   const linhas = [];
-  for (const [m, r] of Object.entries(S.merenda.m)) if (!S.mun || +m === S.mun) for (const ano of Object.keys(r.r || {}).sort()){ const x = meAno(r, ano); linhas.push([m, nomeMun(+m), ano, x.alunos, x.escolas, n(x.valor), n(x.porAluno?.toFixed(2))]); }
+  const anosTodos = [...new Set([...Object.keys(Object.values(S.merenda.m)[0]?.r || {}), ...(TR_META?.meses || []).map(x => x.slice(0, 4))])].sort();
+  for (const [m, r] of Object.entries(S.merenda.m)) if (!S.mun || +m === S.mun) for (const ano of anosTodos){ const x = meAno(r, ano); if (x) linhas.push([m, nomeMun(+m), ano, x.alunos, x.escolas, n(x.valor?.toFixed(2)), n(x.porAluno?.toFixed(2))]); }
+  if (TR_META && S.transf){ linhas.push([]); linhas.push(["Código IBGE", "Município", "Mês do pagamento", "", "", "Valor recebido (R$)", ""]);
+    for (const [m, r] of Object.entries(S.merenda.m)) if ((!S.mun || +m === S.mun) && r.t) TR_META.meses.forEach((mes, i) => { if (r.t[i]) linhas.push([m, nomeMun(+m), mes, "", "", n(r.t[i].toFixed(2)), ""]); }); }
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-merenda-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
@@ -1976,7 +2031,7 @@ async function iniciar(){
       getJSON("data/ideb/meta.json").catch(() => null), getJSON("data/ideb/brasil.json").catch(() => null)]);
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
-    ME_META = await getJSON("data/merenda/meta.json").catch(() => null);
+    [ME_META, TR_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null)]);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
