@@ -51,7 +51,8 @@ def baixar_catalogo() -> str:
                 tipo = r.headers.get("Content-Type", "")
                 dados = r.read()
             if "csv" not in tipo:
-                raise RuntimeError(f"o INEP devolveu {tipo} em vez de CSV ({dados[:120]!r})")
+                visivel = re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", dados.decode("utf-8", "replace"), flags=re.S)
+                raise RuntimeError(f"o INEP devolveu {tipo} em vez de CSV: {' '.join(visivel.split())[:300]}")
             c.log(f"   catálogo: {len(dados) / 1e6:.1f} MB")
             return dados.decode("utf-8-sig", errors="replace")
         except Exception as e:  # noqa: BLE001
