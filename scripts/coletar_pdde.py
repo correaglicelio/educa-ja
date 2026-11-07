@@ -4,12 +4,13 @@ Educa Já - Dinheiro Direto na Escola (PDDE, FNDE - Plataforma Antonieta de Barr
   - produto 26: escolas que podem receber o PDDE: código INEP, CNPJ da associação (UEx), alunos, valor estimado
   - produto 66: execução financeira do PDDE Básico (rede pública): valor pago por escola e parcela
   - produto 70: saldo acumulado nas contas das associações das escolas públicas
+  - produto 59: atualização cadastral da escola/associação no PDDE do ano (sem ela a escola não recebe)
 
 O ano em curso vem dos repasses mês a mês do Portal da Transparência (coletar_transferencias.py), pelo CNPJ
 da associação. Nomes de dirigentes NÃO são publicados.
 
 Gera public/data/pdde/<código UF>.json e meta.json:
-  "e": {escola: [alunos, índice da UEx, estimado, pago, parcelas, saldo]}
+  "e": {escola: [alunos, índice da UEx, estimado, pago, parcelas, saldo, cadastro atualizado (1 sim, 0 não, null sem dado)]}
   "uex": [[cnpj, nome da associação], ...]
 
 Uso: python scripts/coletar_pdde.py [--uf MT | --uf todas]
@@ -71,7 +72,7 @@ def main() -> None:
         return uex_idx[cnpj]
 
     def reg(cod: int) -> list:
-        return esc.setdefault(cod, [0, None, 0.0, 0.0, 0, 0.0])
+        return esc.setdefault(cod, [0, None, 0.0, 0.0, 0, 0.0, None])
 
     # 1) escolas que podem receber (fica o ano mais recente de cada escola)
     n = 0
@@ -120,6 +121,25 @@ def main() -> None:
         n += 1
     c.log(f"   contas com saldo: {n:,}")
 
+    # 4) atualização cadastral do ano mais recente (produto 59)
+    n = 0
+    try:
+        for d in ler(59):
+            cod = c.inteiro(d.get("co_escola"))
+            if not cod or cod // 1_000_000 not in cods:
+                continue
+            ano = c.inteiro(d.get("an_exercicio")) or 0
+            if ano < anos.get(("59", cod), 0):
+                continue
+            anos[("59", cod)] = ano
+            st = c.sem_acento(d.get("st_atualizado", "")).upper()
+            reg(cod)[6] = 1 if st.startswith("S") else 0 if st.startswith("N") else None
+            anos["59"] = max(anos.get("59", 0), ano)
+            n += 1
+    except Exception as e:  # noqa: BLE001
+        c.log(f"   cadastro (produto 59): falhou ({e})")
+    c.log(f"   escolas com situação do cadastro: {n:,}")
+
     gerados = []
     for cod_uf in sorted(cods):
         e = {str(k): v for k, v in esc.items() if k // 1_000_000 == cod_uf}
@@ -136,8 +156,8 @@ def main() -> None:
     antigo = c.ler_json(SAIDA / "meta.json", {}) or {}
     c.salvar_json(SAIDA / "meta.json", {
         "gerado_em": c.agora_iso(), "ufs": sorted(set(antigo.get("ufs", [])) | set(gerados)),
-        "ano_estimado": anos.get("26"), "ano_pago": anos.get("66"), "ano_saldo": anos.get("70"),
-        "atualizado": {"escolas": atualizado(26), "execucao": atualizado(66), "saldo": atualizado(70)},
+        "ano_estimado": anos.get("26"), "ano_pago": anos.get("66"), "ano_saldo": anos.get("70"), "ano_cadastro": anos.get("59"),
+        "atualizado": {"escolas": atualizado(26), "execucao": atualizado(66), "saldo": atualizado(70), "cadastro": atualizado(59)},
         "fonte": "FNDE, Programa Dinheiro Direto na Escola (PDDE): escolas atendidas, execução financeira e saldos "
                  "das contas (Plataforma Antonieta de Barros)",
         "aviso": "O PDDE vai para a associação de pais e mestres (Unidade Executora) de cada escola. Nomes de "
@@ -145,7 +165,7 @@ def main() -> None:
     })
     pl = [(k, v) for k, v in esc.items() if 51025800 <= k < 51070000 and k in {51025892, 51025973, 51026244, 51069415}]
     for k, v in pl:
-        c.log(f"Conferência {k}: alunos {v[0]}, estimado {v[2]}, pago {v[3]} em {v[4]} parcelas, saldo {v[5]}")
+        c.log(f"Conferência {k}: alunos {v[0]}, estimado {v[2]}, pago {v[3]} em {v[4]} parcelas, saldo {v[5]}, cadastro {v[6]}")
 
 
 if __name__ == "__main__":

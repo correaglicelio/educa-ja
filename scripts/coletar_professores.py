@@ -33,7 +33,7 @@ SAIDA = c.DADOS_PUBLICOS / "professores"
 INSE_BASE = "https://download.inep.gov.br/informacoes_estatisticas/indicadores_educacionais/{ano}/nivel_socioeconomico/"
 ETAPAS_AFD = ["ED_INF", "FUN_AI", "FUN_AF", "MED"]
 ETAPAS_IED = ["FUN_AI", "FUN_AF", "MED"]
-REDE_INSE = {"0": "Total", "1": "Federal", "2": "Estadual", "3": "Municipal", "4": "Privada", "5": "Pública"}
+REDE_INSE = {"0": "Total", "1": "Federal", "2": "Estadual", "3": "Municipal", "6": "Pública"}   # 5 = estadual + municipal (não usado)
 ROMANO = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7, "VIII": 8}
 
 
