@@ -71,7 +71,11 @@ def baixar_mes(ref: str, recente: bool) -> list[list] | None:
             a = ACOES.get(lin[idx["AÇÃO"]].strip())
             if not a:
                 continue
-            v = c.numero(lin[idx["VALOR TRANSFERIDO"]]) or 0.0
+            txt = lin[idx["VALOR TRANSFERIDO"]].strip().replace(".", "").replace(",", ".")   # 1.234,56 -> 1234.56
+            try:
+                v = float(txt)
+            except ValueError:
+                v = 0.0
             linhas.append([a, lin[idx["UF"]].strip(), lin[idx["NOME MUNICÍPIO"]].strip(), lin[idx["TIPO FAVORECIDO"]].strip(),
                            lin[idx["CÓDIGO FAVORECIDO"]].strip(), lin[idx["NOME FAVORECIDO"]].strip(), round(v, 2)])
     CACHE.mkdir(parents=True, exist_ok=True)
