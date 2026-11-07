@@ -61,6 +61,11 @@ jobs:
         run: python scripts/coletar_fluxo.py --uf todas
         continue-on-error: true
         timeout-minutes: 60
+      - name: Repasses do FNDE mês a mês (Portal da Transparência)
+        id: transferencias
+        run: python scripts/coletar_transferencias.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 40
       - name: Merenda escolar (PNAE, FNDE)
         id: merenda
         run: python scripts/coletar_merenda.py --uf todas
@@ -87,6 +92,7 @@ jobs:
             echo "| Ideb e Saeb | ${{ steps.ideb.outcome }} |"
             echo "| Gastos (SIOPE) | ${{ steps.gastos.outcome }} |"
             echo "| Fluxo escolar | ${{ steps.fluxo.outcome }} |"
+            echo "| Repasses mês a mês | ${{ steps.transferencias.outcome }} |"
             echo "| Merenda (PNAE) | ${{ steps.merenda.outcome }} |"
             echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
