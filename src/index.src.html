@@ -1464,6 +1464,7 @@ function ateQuando(){ return usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : mesAno
 function periodoMerenda(){ return usaTR(ANO_ATUAL) ? `Repasses mês a mês até ${nomeMes(TR_META.ultimo)} e ${ANO_ATUAL - 1} (ano fechado)` : `Repasses de ${ANO_ATUAL} até a atualização do FNDE de ${dataCurta(ME_META.atualizado.repasses)} e ${ANO_ATUAL - 1} (ano fechado)`; }
 function fonteMerenda(){ return `Fontes: ${TR_META && S.transf ? `${esc(TR_META.fonte)} (valores de ${TR_META.meses[0].slice(0, 4)} em diante, ${esc(TR_META.aviso.charAt(0).toLowerCase() + TR_META.aviso.slice(1))}); ` : ""}${esc(ME_META.fonte)}. ${esc(ME_META.aviso)} Dados coletados em ${dataBR(ME_META.gerado_em)}.`; }
 function barrasMeses(reg){
+  const falta = new Set(mesesSemRepasse(reg, ANO_ATUAL));
   const a1 = trIdx(ANO_ATUAL), a0 = trIdx(ANO_ATUAL - 1); if (!a0.length && !a1.length) return "";
   const v1 = MESES.map((_, k) => { const i = a1.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
   const v0 = MESES.map((_, k) => { const i = a0.find(j => +TR_META.meses[j].slice(5) === k + 1); return i == null ? null : reg?.t?.[i] || 0; });
@@ -1475,7 +1476,7 @@ function barrasMeses(reg){
     if (v0[i] != null) g += `<rect x="${x + bw * .12}" y="${y(v0[i])}" width="${w}" height="${y(0) - y(v0[i])}" rx="2" fill="color-mix(in srgb, var(--mc) 30%, var(--surface))"><title>${m}/${ANO_ATUAL - 1}: ${fR$(v0[i])}</title></rect>`;
     if (v1[i] != null){ g += `<rect x="${x + bw * .5}" y="${y(v1[i])}" width="${w}" height="${Math.max(0, y(0) - y(v1[i]))}" rx="2" fill="var(--mc)"><title>${m}/${ANO_ATUAL}: ${fR$(v1[i])}</title></rect>`;
       if (W > 400 && v1[i] > 0) g += `<text class="val" x="${x + bw * .5 + w / 2}" y="${y(v1[i]) - 5}" text-anchor="middle" style="font-size:10px">${k(v1[i])}</text>`;
-      if (v1[i] === 0) g += `<text x="${x + bw * .5 + w / 2}" y="${y(0) - 5}" text-anchor="middle" style="font-size:${W > 400 ? 11 : 9}px;fill:var(--bad);font-weight:700">0</text>`; }
+      if (v1[i] === 0 && falta.has(m)) g += `<text x="${x + bw * .5 + w / 2}" y="${y(0) - 5}" text-anchor="middle" style="font-size:${W > 400 ? 11 : 9}px;fill:var(--bad);font-weight:700">0</text>`; }
     g += `<text x="${x + bw / 2}" y="${H - 7}" text-anchor="middle" style="font-size:${W > 400 ? 12 : 10}px">${m}</text>`; });
   return `<svg class="colunas" viewBox="0 0 ${W} ${H}" role="img" aria-label="Repasses da merenda por mês">${g}</svg>
     <div class="legenda-m" style="margin:8px 0 0"><span><i style="width:10px;height:10px;background:var(--mc)"></i>${ANO_ATUAL}</span><span><i style="width:10px;height:10px;background:color-mix(in srgb, var(--mc) 30%, var(--surface))"></i>${ANO_ATUAL - 1}</span><span>pelo mês do pagamento</span></div>`;
