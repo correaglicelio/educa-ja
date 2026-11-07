@@ -15,6 +15,8 @@ from __future__ import annotations
 import csv
 import http.cookiejar
 import io
+import json
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -37,7 +39,14 @@ def baixar_catalogo() -> str:
     ultimo = None
     for tentativa in range(4):
         try:
-            op.open(urllib.request.Request(PORTAL, headers=UA), timeout=120).read()
+            # a página inicial devolve um formulário escondido (caj_token) que cria a sessão anônima
+            pagina = op.open(urllib.request.Request(PORTAL, headers=UA), timeout=120).read().decode("utf-8", "replace")
+            m = re.search(r"onLoggingInPageLoad\('([^']+)',(\{.*?\})\)", pagina)
+            if m:
+                campos = json.loads(m.group(2))
+                destino = urllib.parse.urljoin(BASE, m.group(1))
+                corpo = urllib.parse.urlencode(campos).encode()
+                op.open(urllib.request.Request(destino, data=corpo, headers={**UA, "Content-Type": "application/x-www-form-urlencoded"}), timeout=120).read()
             with op.open(urllib.request.Request(CSV_URL, headers=UA), timeout=900) as r:
                 tipo = r.headers.get("Content-Type", "")
                 dados = r.read()
