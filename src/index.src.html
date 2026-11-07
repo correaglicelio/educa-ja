@@ -272,6 +272,7 @@ tr.tot td{font-weight:700; border-bottom:0}
 [data-view="fluxo"], [data-ir="fluxo"], #v-fluxo {--mc:var(--m-fluxo)}
 [data-view="merenda"], [data-ir="merenda"], #v-merenda {--mc:var(--m-merenda)}
 [data-view="pdde"], [data-ir="pdde"], #v-pdde {--mc:var(--m-pdde)}
+[data-view="transporte"], [data-ir="transporte"], #v-transporte {--mc:var(--m-transp)}
 .mod-fluxo{--mc:var(--m-fluxo)} .mod-merenda{--mc:var(--m-merenda)} .mod-pdde{--mc:var(--m-pdde)} .mod-transp{--mc:var(--m-transp)}
 .views button{--c1:var(--mc, var(--accent)); --c2:color-mix(in srgb, var(--mc, var(--accent)) 38%, var(--surface))}
 .views button[aria-pressed="true"]{background:color-mix(in srgb, var(--mc, var(--accent)) 13%, var(--surface)); color:var(--ink); box-shadow:inset 3px 0 0 var(--mc, var(--lapis))}
@@ -400,7 +401,7 @@ td.ruim{color:var(--bad); font-weight:700}
   .tabbar{display:grid; grid-template-columns:repeat(var(--n, 2), minmax(0,1fr)); background:var(--surface); border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom,0px); padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px)}
   .tabbar button{border:0; background:transparent; padding:8px 0 10px; min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px; font-size:12px; font-weight:700; color:var(--muted)}
-  .tabbar button{font-size:clamp(9.5px, 2.9vw, 12px); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip}
+  .tabbar button{font-size:clamp(9px, 2.6vw, 12px); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip}
   .tabbar button .dico{width:24px; height:24px; --c1:color-mix(in srgb, var(--mc) 55%, var(--muted)); --c2:color-mix(in srgb, var(--mc) 22%, var(--surface))}
   .tabbar button[aria-pressed="true"]{color:var(--ink)}
   .tabbar button[aria-pressed="true"]{color:var(--mc)}
@@ -444,13 +445,8 @@ td.ruim{color:var(--bad); font-weight:700}
       <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg><span>Fluxo escolar</span></button>
       <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg><span>Merenda</span></button>
       <button type="button" data-view="pdde" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg><span>Dinheiro na escola</span></button>
+      <button type="button" data-view="transporte" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg><span>Transporte</span></button>
     </nav>
-    <div>
-      <p class="menu-tit">Em breve</p>
-      <div class="views" aria-label="Seções em construção">
-        <span class="breve mod-transp"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg>Transporte</span>
-      </div>
-    </div>
     <p class="rodape">Dados abertos do INEP e do FNDE. <a href="https://github.com/correaglicelio/educa-ja" target="_blank" rel="noopener">Código aberto</a></p>
   </header>
 
@@ -473,9 +469,10 @@ td.ruim{color:var(--bad); font-weight:700}
     <div class="view" id="v-fluxo" hidden><div class="inner" id="fluxo"></div></div>
     <div class="view" id="v-merenda" hidden><div class="inner" id="merenda"></div></div>
     <div class="view" id="v-pdde" hidden><div class="inner" id="pdde"></div></div>
+    <div class="view" id="v-transporte" hidden><div class="inner" id="transporte"></div></div>
   </main>
 
-  <nav class="tabbar" aria-label="Navegação" style="--n:7">
+  <nav class="tabbar" aria-label="Navegação" style="--n:8">
     <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg>Painel</button>
     <button type="button" data-view="escolas" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-escola"/></svg>Escolas</button>
     <button type="button" data-view="aprendizagem" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg>Aprender</button>
@@ -483,6 +480,7 @@ td.ruim{color:var(--bad); font-weight:700}
     <button type="button" data-view="fluxo" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-fluxo"/></svg>Fluxo</button>
     <button type="button" data-view="merenda" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-merenda"/></svg>Merenda</button>
     <button type="button" data-view="pdde" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-pdde"/></svg>PDDE</button>
+    <button type="button" data-view="transporte" aria-pressed="false"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg>Ônibus</button>
   </nav>
 </div>
 
@@ -500,7 +498,7 @@ const store = {
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
 const PADRAO = {uf: 51, mun: 5106752};
-const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda", "pdde"];
+const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda", "pdde", "transporte"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
 const REDE = {1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada"};
 const ORDEM_REDE = [3, 2, 1, 4];
@@ -538,13 +536,13 @@ const BASICO = [["sem água potável", r => !tem(r, IB.agua)], ["sem energia el�
 let C = {};                 // índice de cada campo das escolas (vem do meta.json)
 let META = null, MUN = [], MUN_POR_ID = new Map(), UFS = {};
 const CACHE = new Map();    // escolas por UF
-let ME_META = null, TR_META = null, PD_META = null; const MERENDA = new Map(), TRANSF = new Map(), PDDE = new Map();
+let ME_META = null, TR_META = null, PD_META = null, TP_META = null; const MERENDA = new Map(), TRANSF = new Map(), PDDE = new Map(), TRANSP = new Map();
 let IDEB_META = null, IDEB_BR = null, G_META = null, ENEM_META = null, ENEM_BR = null, FL_META = null, FL_BR = null;
 const FLUXO = new Map();
 const ENEM = new Map();
 const GASTOS = new Map();   // SIOPE por UF
 const IDEB = new Map();     // Ideb por UF
-const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", meOrd: "nome", pdOrd: "saldo", gOrd: "nome", etapa: "ai", rede: null,
+const S = {uf: null, mun: null, view: "painel", rows: [], ideb: null, gastos: null, enem: null, aTab: "ideb", enOrd: "media", flRede: null, flEt: 1, flOrd: "nome", meOrd: "nome", pdOrd: "saldo", tpOrd: "nome", gOrd: "nome", etapa: "ai", rede: null,
   f: {redes: new Set([1, 2, 3, 4]), locs: new Set([1, 2]), q: "", paral: false, ord: "nome", lim: 60}};
 
 /* ===================== utilidades ===================== */
@@ -597,6 +595,11 @@ async function carregarUF(uf){
   return CACHE.get(uf);
 }
 
+async function carregarTransp(uf){
+  if (!TP_META || !TP_META.ufs.includes(uf)) return null;
+  if (!TRANSP.has(uf)) TRANSP.set(uf, getJSON(`data/transporte/${uf}.json`).catch(e => { TRANSP.delete(uf); throw e; }));
+  return TRANSP.get(uf);
+}
 async function carregarPdde(uf){
   if (!PD_META || !PD_META.ufs.includes(uf)) return null;
   if (!PDDE.has(uf)) PDDE.set(uf, getJSON(`data/pdde/${uf}.json`).catch(e => { PDDE.delete(uf); throw e; }));
@@ -650,7 +653,7 @@ async function trocarUF(uf, mun){
   $("#cidade").value = S.mun ? nomeMun(S.mun) : "";
   const box = document.createElement("div"); box.className = "loading"; box.textContent = "Carregando escolas de " + nomeUF(uf) + "…";
   $(".main").append(box);
-  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null)]); juntarTransf(); nota(""); }
+  try { [S.rows, S.ideb, S.gastos, S.enem, S.fluxo, S.merenda] = await Promise.all([carregarUF(uf), carregarIdeb(uf).catch(() => null), carregarGastos(uf).catch(() => null), carregarEnem(uf).catch(() => null), carregarFluxo(uf).catch(() => null), carregarMerenda(uf).catch(() => null)]); [S.transf, S.pdde, S.transp] = await Promise.all([carregarTransf(uf).catch(() => null), carregarPdde(uf).catch(() => null), carregarTransp(uf).catch(() => null)]); juntarTransf(); nota(""); }
   catch { S.rows = []; nota("Não foi possível carregar os dados deste estado. Verifique a conexão e tente de novo.", true); }
   finally { box.remove(); }
   S.f.lim = 60;
@@ -704,7 +707,7 @@ function setView(v, {semHash} = {}){
   if (!semHash && location.hash !== "#" + v) history.replaceState(null, "", "#" + v);
   $("#v-" + v).scrollTop = 0;
 }
-function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); renderMerenda(); renderPdde(); }
+function renderTudo(){ renderPainel(); renderEscolas(); renderAprendizagem(); renderGastos(); renderFluxo(); renderMerenda(); renderPdde(); renderTransporte(); }
 
 /* ===================== cálculos ===================== */
 function resumo(rows){
@@ -747,6 +750,12 @@ const DICAS = {
   enareas: "As 4 provas objetivas são corrigidas pela <b>TRI</b> (Teoria de Resposta ao Item): a nota depende de quais questões o aluno acertou, não só de quantas. Não há nota máxima fixa; a média nacional fica perto de 500.",
   redacao: "A redação vale de 0 a 1.000: cinco competências de até 200 pontos cada (norma culta, tema, argumentação, coesão e proposta de intervenção).",
   enpart: "Alunos do último ano que foram aos dois dias de prova, de todos os que se inscreveram informando a escola. Faltar muito derruba o número de participantes e pode mudar a média.",
+  pnate: "<b>PNATE</b> é o Programa Nacional de Apoio ao Transporte do Escolar, do FNDE. Ajuda a prefeitura e o estado a pagar o transporte (ônibus, combustível, manutenção, motorista) dos alunos que moram na zona rural.",
+  alunospnate: "Alunos da rede pública que moram na zona rural e usam o transporte escolar, segundo o Censo Escolar do ano anterior, usados pelo FNDE para calcular o repasse.",
+  pcpnate: "Valor por aluno no ano definido pelo FNDE para cada cidade, conforme a área rural, a população rural e a pobreza do município (vai de cerca de R$ 120 a R$ 172).",
+  descpnate: "Descontos que o FNDE aplica no valor previsto, por exemplo, quando há saldo do ano anterior sem uso ou pendência na prestação de contas.",
+  delegacao: "A prefeitura pode transportar também os alunos da rede estadual que moram na zona rural. Com essa autorização (delegação), o FNDE repassa à prefeitura o valor desses alunos.",
+  caminho: "O <b>Caminho da Escola</b> é o programa do FNDE para comprar ônibus, lanchas e bicicletas escolares. Os valores aparecem no ano em que o FNDE pagou.",
   pdde: "<b>PDDE</b> é o Programa Dinheiro Direto na Escola, do FNDE. O dinheiro vai direto para a associação de pais e mestres de cada escola, para pequenos reparos, material e atividades pedagógicas, decididos pela própria comunidade escolar.",
   pddebasico: "Parte fixa do PDDE, paga todo ano às escolas públicas conforme o número de alunos do Censo Escolar, em geral em 2 parcelas. Há também ações extras com regras próprias (Educação Conectada, tempo integral, acessibilidade...).",
   saldopdde: "Dinheiro do PDDE que estava na conta da associação no fim do ano, sem ser gasto. Um pouco de saldo é normal (parcela que chegou no fim do ano); saldo alto e repetido indica dinheiro que poderia estar melhorando a escola.",
@@ -834,7 +843,7 @@ function renderPainel(){
     ...(faltas.length ? faltas.map(f => [esc(f.nome[0].toUpperCase() + f.nome.slice(1)), `<b class="bad">${fmt(f.lista.length)} escola${f.lista.length > 1 ? "s" : ""}</b>`])
       : [[T("basico", "Água, energia e banheiro"), `<b class="ok">todas ✓</b>`]]),
     [T("internet", "Internet para os alunos"), `<b class="${internet.p != null && internet.p < 50 ? "warn" : "ok"}">${ip}</b>`]]);
-  const breve = [["d-onibus", "Transporte", "PNATE e alunos da zona rural transportados."]];
+  const breve = [];
   el.innerHTML = cabecalho("painel", "Painel de " + esc(lugar()), S.mun ? esc(nomeUF(S.uf)) : "Estado todo") + `
     <div class="rs-leg"><span><i style="--c:var(--bad)"></i>Problema sério</span><span><i style="--c:var(--warn)"></i>Atenção</span><span>Toque no cartão para ver os detalhes.</span></div>
     <div class="rs-grid">
@@ -851,6 +860,7 @@ function renderPainel(){
       ${cardFluxo()}
       ${cardMerenda()}
       ${cardPdde()}
+      ${cardTransporte()}
       ${breve.map(([ic, t, d]) => `<div class="rs-card breve mod-${({"d-fluxo": "fluxo", "d-merenda": "merenda", "d-pdde": "pdde", "d-onibus": "transp"})[ic]}" aria-disabled="true"><header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#${ic}"/></svg></span><h3>${t}</h3></header><p>${d}</p><p><b>Em breve</b></p></div>`).join("")}
     </div>
     <p class="src">${fonte()}</p>`;
@@ -1721,6 +1731,97 @@ async function exportarCSVPdde(){
   const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   await salvar(`educa-ja-pdde-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
 }
+
+/* ===================== transporte escolar ===================== */
+const tpReg = mun => mun ? S.transp?.m?.[mun] : S.transp?.estado;
+const tpSerie = mun => mun ? S.transf?.m?.[mun]?.pnate : S.transf?.estado?.pnate;
+const somaAno = (serie, ano) => serie ? trIdx(ano).reduce((t, i) => t + (serie[i] || 0), 0) : 0;
+function censoTransp(mun){
+  const rs = S.rows.filter(r => r[C.municipio] === mun && r[C.situacao] === 1);
+  return {transp: rs.reduce((t, r) => t + (r[C.mat_transporte_publico] || 0), 0), rural: rs.reduce((t, r) => t + (r[C.mat_moram_zona_rural] || 0), 0),
+    escolas: rs.filter(r => r[C.mat_transporte_publico] > 0).sort((a, b) => b[C.mat_transporte_publico] - a[C.mat_transporte_publico])};
+}
+function periodoTransp(){ return `${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} (Portal da Transparência) · PNATE ${String(TP_META.data_arquivo || "").slice(0, 4)} e alunos (FNDE) · Censo Escolar`; }
+function fonteTransp(){ return `Fontes: ${esc(TP_META.fonte)}, atualizados em ${dataCurta(TP_META.atualizado.repasses)}; ${TR_META ? esc(TR_META.fonte) : ""}; INEP, Censo Escolar (alunos que usam transporte escolar público). ${esc(TP_META.aviso)} Dados coletados em ${dataBR(TP_META.gerado_em)}.`; }
+function cabecalhoT(titulo, sub, acoes = ""){
+  return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg></span>
+    <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
+}
+function renderTransporte(){
+  const el = $("#transporte"); if (!el) return;
+  const titulo = "Transporte escolar · " + esc(lugar());
+  if (!TP_META){ el.innerHTML = cabecalhoT(titulo, "FNDE") + `<div class="aviso">${ICO.info}<div>Os dados do transporte escolar ainda estão sendo carregados. Volte em alguns minutos.</div></div>`; return; }
+  if (!S.transp){ el.innerHTML = cabecalhoT(titulo, periodoTransp()) + `<div class="aviso">${ICO.info}<div>Ainda não há dados do transporte escolar de ${esc(nomeUF(S.uf))}.</div></div>`; return; }
+  const acoes = `<button class="btn" id="tp-csv" type="button">${ICO.csv}Baixar CSV</button>`;
+  if (!S.mun){ el.innerHTML = cabecalhoT(titulo, periodoTransp(), acoes) + estadoTransp() + `<p class="src">${fonteTransp()}</p>`; return; }
+  const reg = tpReg(S.mun) || {}, serie = tpSerie(S.mun), cs = censoTransp(S.mun);
+  const v1 = somaAno(serie, ANO_ATUAL), v0 = somaAno(serie, ANO_ATUAL - 1), anoFNDE = String(TP_META.data_arquivo || "").slice(0, 4);
+  const prev = (reg.prev || []).reduce((t, v) => t + v, 0), pagar = (reg.pagar || []).reduce((t, v) => t + v, 0), desc = prev - pagar;
+  const lista = Object.values(S.transp.m).map(x => x.pc).filter(v => v).sort((a, b) => b - a);
+  const cde = Object.entries(reg.cde || {}).sort((a, b) => b[0] - a[0]);
+  el.innerHTML = cabecalhoT(titulo, periodoTransp(), acoes) + `
+    <div class="empilha">
+      <div class="box"><h3>${ANO_ATUAL}, ${T("parcial", "ano em curso")} <small>até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</small></h3>
+        ${usaTR(ANO_ATUAL) ? rsTab([[""], [String(ANO_ATUAL), "n"], [`${ANO_ATUAL - 1} inteiro`, "n"]], [[T("pnate", "Recebido do PNATE"), `<b>${fR$(v1)}</b>`, fR$(v0)]]) + barrasMeses({t: serie}, []) : `<p class="src">Repasses mês a mês ainda não disponíveis.</p>`}
+        <p class="src" style="margin-top:8px">O PNATE é pago em parcelas ao longo do ano, pelo mês do pagamento. O valor recebido pode incluir parcelas atrasadas de outros anos.</p></div>
+      <div class="box"><h3>PNATE ${anoFNDE} <small>como o FNDE calculou o repasse</small></h3>
+        ${rsTab([[""], ["Valor", "n"]], [[T("alunospnate", "Alunos da zona rural atendidos"), `<b>${fmt(reg.alunos)}</b>`],
+          [T("pcpnate", "Valor por aluno no ano"), `<b>${fR2(reg.pc)}</b>`], ["Posição em " + esc(siglaUF(S.uf)), reg.pc ? `${lista.filter(v => v > reg.pc).length + 1}º de ${fmt(lista.length)}` : "–"],
+          ["Previsto", fR$(prev)], ...(desc > 1 ? [[T("descpnate", "Descontos"), `<b class="warn">− ${fR$(desc)}</b>`]] : []), ["A pagar", `<b>${fR$(pagar)}</b>`],
+          [T("delegacao", "Transporta alunos da rede estadual"), reg.deleg ? "sim" : "não"]])}
+        ${reg.prev ? rsTab([["Previsto por etapa"], ["", "n"]], [["Educação infantil", fR$(reg.prev[0])], ["Ensino fundamental", fR$(reg.prev[1])], ["Ensino médio", fR$(reg.prev[2])]]) : ""}</div>
+    </div>
+    <div class="grid2">
+      <div class="box"><h3>Quem usa o transporte <small>Censo Escolar ${META.ano}</small></h3>
+        ${rsTab([[""], ["Alunos", "n"]], [["Usam transporte escolar público", `<b>${fmt(cs.transp)}</b>`], ["Moram na zona rural", fmt(cs.rural)]])}
+        ${cs.escolas.length ? rsTab([["Escolas com mais transportados"], ["Alunos", "n"]], cs.escolas.slice(0, 8).map(r => [`<a href="#escola-${r[C.codigo]}" data-esc="${r[C.codigo]}">${esc(tituloEscola(r[C.nome]))}</a>`, `<b>${fmt(r[C.mat_transporte_publico])}</b>`])) : ""}
+        <p class="src" style="margin-top:8px">O Censo conta todos os alunos que usam transporte escolar público, inclusive na cidade; o PNATE paga só pelos da zona rural.</p></div>
+      <div class="box"><h3>${T("caminho", "Caminho da Escola")} <small>ônibus e outros veículos pagos pelo FNDE</small></h3>
+        ${cde.length ? rsTab([["Ano"], ["Pago", "n"]], cde.map(([a, v]) => [a, `<b>${fR$(v)}</b>`])) : `<p class="src">Nenhum pagamento do Caminho da Escola para ${esc(nomeMun(S.mun))} nos dados abertos do FNDE.</p>`}</div>
+    </div>
+    <p class="src">${fonteTransp()}</p>`;
+}
+function estadoTransp(){
+  const ano0 = ANO_ATUAL - 1, est = tpReg(null) || {};
+  const lin = MUN.filter(m => m[3] === S.uf).map(m => { const r = S.transp.m[m[0]] || {}, s = tpSerie(m[0]); return {m: m[0], r, v1: somaAno(s, ANO_ATUAL), v0: somaAno(s, ano0)}; });
+  const tot = k => lin.reduce((t, x) => t + (x[k] || 0), 0), alunos = lin.reduce((t, x) => t + (x.r.alunos || 0), 0);
+  const ord = {nome: (a, b) => semAcento(nomeMun(a.m)).localeCompare(semAcento(nomeMun(b.m))), alunos: (a, b) => (b.r.alunos || 0) - (a.r.alunos || 0), pc: (a, b) => (a.r.pc || 1e9) - (b.r.pc || 1e9), ano: (a, b) => b.v1 - a.v1}[S.tpOrd] || (() => 0);
+  lin.sort(ord);
+  return `<div class="kpis">
+      <div class="kpi"><div class="k">Prefeituras · ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</div><div class="v">${fMi(tot("v1"))}</div><div class="s">em ${ano0}: ${fMi(tot("v0"))}</div></div>
+      <div class="kpi"><div class="k">Governo do estado · ${ANO_ATUAL}</div><div class="v">${fMi(somaAno(tpSerie(null), ANO_ATUAL))}</div><div class="s">${fmt(est.alunos)} alunos atendidos</div></div>
+      <div class="kpi"><div class="k">${T("alunospnate", "Alunos atendidos")} (prefeituras)</div><div class="v">${fmt(alunos)}</div><div class="s">zona rural, pelo PNATE</div></div>
+      <div class="kpi"><div class="k">${T("delegacao", "Transportam alunos do estado")}</div><div class="v">${fmt(lin.filter(x => x.r.deleg).length)}</div><div class="s">de ${fmt(lin.length)} prefeituras</div></div>
+    </div>
+    <div class="box"><h3>Cidades de ${esc(nomeUF(S.uf))} <small>toque para abrir</small></h3>
+      <div class="chips" style="margin-bottom:10px"><span class="rot">Ordenar</span>${[["nome", "Nome"], ["alunos", "Mais alunos"], ["pc", "Menor valor por aluno"], ["ano", `Mais recebido em ${ANO_ATUAL}`]].map(([k, t]) => `<button type="button" class="chip" data-tpord="${k}" aria-pressed="${S.tpOrd === k}"><i></i>${t}</button>`).join("")}</div>
+      <div class="tablewrap" style="max-height:540px;overflow:auto"><table><thead><tr><th>Município</th><th class="n">Alunos</th><th class="n">Por aluno</th><th class="n">${ANO_ATUAL} até agora</th><th class="n">${ano0}</th><th class="n">Delegação</th></tr></thead>
+      <tbody>${lin.map(x => `<tr class="click" data-mun="${x.m}"><td>${esc(nomeMun(x.m))}</td><td class="n">${fmt(x.r.alunos)}</td><td class="n">${fR2(x.r.pc)}</td><td class="n">${fR$(x.v1)}</td><td class="n">${fR$(x.v0)}</td><td class="n">${x.r.deleg ? "sim" : "não"}</td></tr>`).join("")}</tbody></table></div></div>`;
+}
+function cardTransporte(){
+  if (!TP_META || !S.transp) return "";
+  const reg = tpReg(S.mun); if (!reg && S.mun) return "";
+  const v1 = S.mun ? somaAno(tpSerie(S.mun), ANO_ATUAL) : Object.values(S.transf?.m || {}).reduce((t, d) => t + somaAno(d.pnate, ANO_ATUAL), 0);
+  const v0 = S.mun ? somaAno(tpSerie(S.mun), ANO_ATUAL - 1) : Object.values(S.transf?.m || {}).reduce((t, d) => t + somaAno(d.pnate, ANO_ATUAL - 1), 0);
+  const alunos = S.mun ? reg.alunos : Object.values(S.transp.m).reduce((t, x) => t + (x.alunos || 0), 0);
+  const cs = S.mun ? censoTransp(S.mun) : null;
+  return `<button type="button" class="rs-card" data-ir="transporte">
+    <header><span class="rs-ic"><svg class="dico" aria-hidden="true"><use href="#d-onibus"/></svg></span><h3>Transporte escolar</h3></header>
+    <div class="rs-big">${fR$(v1)}<small>recebidos do ${T("pnate", "PNATE")} em ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"} (parcial)${S.mun ? "" : " · prefeituras"}</small></div>
+    ${rsTab([[""], ["Valor", "n"]], [[`Recebido em ${ANO_ATUAL - 1}`, `<b>${fR$(v0)}</b>`], [T("alunospnate", "Alunos atendidos"), `<b>${fmt(alunos)}</b>`],
+      ...(S.mun ? [[T("pcpnate", "Valor por aluno no ano"), `<b>${fR2(reg.pc)}</b>`], ["Usam transporte (Censo)", `<b>${fmt(cs.transp)}</b>`]] : [])])}
+    <span class="rs-link">Ver transporte escolar →</span>
+    <span class="rs-periodo">${ICO_CAL}<span>Portal da Transparência, FNDE e Censo · ${ANO_ATUAL} até ${usaTR(ANO_ATUAL) ? nomeMes(TR_META.ultimo) : "–"}</span></span></button>`;
+}
+async function exportarCSVTransp(){
+  if (!TP_META || !S.transp) return toast("Sem dados para exportar");
+  const n = v => v == null ? "" : String(Math.round(v * 100) / 100).replace(".", ",");
+  const cab = ["Código IBGE", "Município", "Alunos atendidos (PNATE)", "Valor por aluno", "Previsto", "A pagar", "Delegação estadual", `Recebido ${ANO_ATUAL} (até ${TR_META?.ultimo || ""})`, `Recebido ${ANO_ATUAL - 1}`];
+  const linhas = [];
+  for (const [m, r] of Object.entries(S.transp.m)) if (!S.mun || +m === S.mun) linhas.push([m, nomeMun(+m), r.alunos, n(r.pc), n((r.prev || []).reduce((t, v) => t + v, 0)), n((r.pagar || []).reduce((t, v) => t + v, 0)), r.deleg ? "sim" : "não", n(somaAno(tpSerie(+m), ANO_ATUAL)), n(somaAno(tpSerie(+m), ANO_ATUAL - 1))]);
+  const q = v => { const t = String(v ?? ""); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  await salvar(`educa-ja-transporte-${semAcento(lugar()).replace(/\W+/g, "-")}-${ANO_ATUAL}.csv`, new Blob(["﻿" + [cab, ...linhas].map(l => l.map(q).join(";")).join("\r\n")], {type: "text/csv"}));
+}
 function cabecalhoA(titulo, sub, acoes = ""){
   return `<div class="vhead"><div class="vtit"><span class="ptile"><svg class="dico" aria-hidden="true"><use href="#d-aprend"/></svg></span>
     <div><h2>${titulo}</h2><p>${sub}</p></div></div>${acoes ? `<div class="acoes">${acoes}</div>` : ""}</div>`;
@@ -1785,6 +1886,7 @@ async function exportarCSVIdeb(){
 const GI = {};   // posição de cada indicador (vem do meta.json)
 const fPct = v => v == null ? "–" : v.toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + "%";
 const fR$ = v => v == null ? "–" : "R$ " + Math.round(v).toLocaleString("pt-BR");
+const fR2 = v => v == null ? "–" : "R$ " + v.toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fMi = v => v == null ? "–" : v >= 1e9 ? "R$ " + (v / 1e9).toLocaleString("pt-BR", {maximumFractionDigits: 2}) + " bi" : v >= 1e6 ? "R$ " + (v / 1e6).toLocaleString("pt-BR", {maximumFractionDigits: 1}) + " mi" : fR$(v);
 const fMiS = v => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + fMi(Math.abs(v));
 function fundebSaldo(arr){ const r = gv(arr, "fundeb_recebido"), cpl = gv(arr, "fundeb_complementacao") || 0, ct = gv(arr, "fundeb_contribuicao");
@@ -2112,6 +2214,8 @@ function ligar(){
     if (t.closest("#a-csv")){ exportarCSVIdeb(); return; }
     if (t.closest("#g-csv")){ exportarCSVGastos(); return; }
     const go = t.closest("[data-gord]"); if (go){ S.gOrd = go.dataset.gord; renderGastos(); return; }
+    const to = t.closest("[data-tpord]"); if (to){ S.tpOrd = to.dataset.tpord; renderTransporte(); return; }
+    if (t.closest("#tp-csv")){ exportarCSVTransp(); return; }
     const po = t.closest("[data-pdord]"); if (po){ S.pdOrd = po.dataset.pdord; renderPdde(); return; }
     if (t.closest("#pd-csv")){ exportarCSVPdde(); return; }
     const mo = t.closest("[data-meord]"); if (mo){ S.meOrd = mo.dataset.meord; renderMerenda(); return; }
@@ -2157,6 +2261,7 @@ async function iniciar(){
     IDEB_META = im; IDEB_BR = ib;
     G_META = await getJSON("data/gastos/meta.json").catch(() => null);
     [ME_META, TR_META, PD_META] = await Promise.all([getJSON("data/merenda/meta.json").catch(() => null), getJSON("data/transferencias/meta.json").catch(() => null), getJSON("data/pdde/meta.json").catch(() => null)]);
+    TP_META = await getJSON("data/transporte/meta.json").catch(() => null);
     [FL_META, FL_BR] = await Promise.all([getJSON("data/fluxo/meta.json").catch(() => null), getJSON("data/fluxo/brasil.json").catch(() => null)]);
     [ENEM_META, ENEM_BR] = await Promise.all([getJSON("data/enem/meta.json").catch(() => null), getJSON("data/enem/brasil.json").catch(() => null)]);
     if (G_META) G_META.indicadores.forEach((x, i) => { GI[x.chave] = i; });
