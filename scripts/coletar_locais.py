@@ -153,13 +153,25 @@ def main() -> None:
         nomes[str(cod)] = (nucleo(d.get("Escola", "")), casa.codigo(d.get("Município", ""), uf))
         total += 1
     c.log(f"   {total:,} escolas; sem localização válida no Catálogo: {sem:,}")
-    # completa com o OpenStreetMap: nome parecido e perto das outras escolas do mesmo município
+    # completa com o OpenStreetMap: nome parecido e perto das outras escolas do mesmo município.
+    # As localizações achadas ficam guardadas; cada estado só é consultado de novo a cada 90 dias.
     import difflib
-    achadas = 0
+    from datetime import date, timedelta
+    antigo_meta = c.ler_json(SAIDA / "meta.json", {}) or {}
+    tentado = dict(antigo_meta.get("osm_consultado", {}))
+    achadas = reaproveitadas = 0
     for uf in ufs:
+        velho = c.ler_json(SAIDA / f"{c.SIGLAS[uf]}.json", {}) or {}
+        for k, v in por_uf.get(uf, {}).items():
+            antes = velho.get(k)
+            if v[0] is None and antes and len(antes) > 4 and antes[4] == 1 and antes[0] is not None:
+                v[0:2] = antes[0:2]
+                v.append(1)
+                reaproveitadas += 1
         faltam = [k for k, v in por_uf.get(uf, {}).items() if v[0] is None and nomes[k][0] and nomes[k][1]]
-        if not faltam:
+        if not faltam or tentado.get(uf, "") > (date.today() - timedelta(days=90)).isoformat():
             continue
+        tentado[uf] = date.today().isoformat()
         centro: dict = {}
         for k, v in por_uf[uf].items():
             if v[0] is not None and nomes[k][1]:
@@ -178,7 +190,7 @@ def main() -> None:
                 por_uf[uf][k].append(1)        # 1 = localização vinda do OpenStreetMap
                 achadas += 1
         c.log(f"      {uf}: {len(osm):,} escolas no OpenStreetMap; completadas até agora: {achadas:,}")
-    c.log(f"   localizações completadas pelo OpenStreetMap: {achadas:,}")
+    c.log(f"   localizações completadas pelo OpenStreetMap: {achadas:,} novas, {reaproveitadas:,} guardadas de antes")
     gerados = []
     for uf in ufs:
         if uf not in por_uf:
@@ -190,7 +202,7 @@ def main() -> None:
         gerados.append(cod_uf)
     antigo = c.ler_json(SAIDA / "meta.json", {}) or {}
     c.salvar_json(SAIDA / "meta.json", {
-        "gerado_em": c.agora_iso(), "ufs": sorted(set(antigo.get("ufs", [])) | set(gerados)),
+        "gerado_em": c.agora_iso(), "ufs": sorted(set(antigo.get("ufs", [])) | set(gerados)), "osm_consultado": tentado,
         "fonte": "INEP, Catálogo de Escolas (InepData): endereço, telefone e localização informados pelas escolas no Censo Escolar; "
                  "localizações que faltavam completadas pelo OpenStreetMap (© colaboradores do OpenStreetMap, ODbL)",
         "aviso": "A localização é informada pela própria escola e pode ter erros. Confira o endereço antes de ir.",
