@@ -66,9 +66,8 @@ symbol .da{fill:var(--c1, var(--accent))} symbol .db{fill:var(--c2, color-mix(in
   display:flex; align-items:center; gap:14px; flex-wrap:wrap}
 .brand{display:flex; align-items:center; gap:12px; margin-right:auto; text-decoration:none; color:inherit}
 .brand .logo{width:44px; height:44px; flex:none}
-.brand b{font-family:var(--f-display); font-weight:800; font-size:28px; letter-spacing:-.03em; line-height:1; color:var(--accent); white-space:nowrap}
-.brand b em{font-style:normal; color:var(--lapis-ink)}
-.brand small{display:block; color:var(--muted); font-size:12px; margin-top:3px; font-weight:500}
+.brand b{font-family:var(--f-display); font-weight:800; font-size:30px; letter-spacing:-.035em; line-height:1; color:var(--accent); white-space:nowrap}
+.brand b em{font-style:normal; display:inline-block; background:var(--lapis); color:#1A2462; padding:.06em .2em .1em; border-radius:.22em; transform:rotate(-5deg) translateY(-.04em); margin-left:.06em; box-shadow:0 .06em 0 rgb(0 0 0 / .18)}
 .views{display:flex; gap:2px}
 .views button{border:0; background:transparent; display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px; text-align:left; font-weight:500; font-size:15px; color:var(--ink); --c1:var(--accent)}
 .views button:hover{background:var(--sel)}
@@ -397,8 +396,8 @@ td.ruim{color:var(--bad); font-weight:700}
   .app{grid-template-rows:auto auto minmax(0,1fr) auto}
   .top{background:var(--faixa); border-bottom:0; color:#fff; padding-block:10px}
   body::before{background:var(--faixa)}
-  .top .brand b{color:#fff} .top .brand b em{color:var(--lapis)} .top .brand small{color:rgb(255 255 255 / .75)}
-  .brand .logo{width:38px; height:38px} .brand b{font-size:25px}
+  .top .brand b{color:#fff} .top .brand b em{background:#F2B705; color:#1A2462} .top .brand .logo{border-radius:10px; box-shadow:0 0 0 1.5px rgb(255 255 255 / .35)}
+  .brand .logo{width:38px; height:38px} .brand b{font-size:26px}
   .top .views,.top .menu-tit,.top .rodape{display:none}
   .field.grow{flex:1 1 calc(100% - 110px)}
   .field.cod{order:4; flex:0 0 150px} .field.cod input{width:100%}
@@ -435,7 +434,7 @@ td.ruim{color:var(--bad); font-weight:700}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
-  <symbol id="d-logo" viewBox="0 0 88 88"><path d="M44 4C26 4 12 18 12 36c0 23 32 48 32 48s32-25 32-48C76 18 62 4 44 4z" fill="#F2B705"/><path d="M27 31c6-3 12-3 17 1v21c-5-4-11-4-17-1z" fill="#FFFFFF"/><path d="M61 31c-6-3-12-3-17 1v21c5-4 11-4 17-1z" fill="#E6E9F7"/><path d="M44 32v21" stroke="#23338C" stroke-width="2.4"/></symbol>
+  <symbol id="d-logo" viewBox="0 0 64 64"><defs><linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3346B0"/><stop offset="1" stop-color="#1C2A78"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#g-logo)"/><rect x="21" y="25" width="6" height="16" rx="2" fill="#F2B705"/><rect x="29" y="16" width="6" height="25" rx="2" fill="#F2B705"/><rect x="37" y="9" width="6" height="32" rx="2" fill="#F2B705"/><path d="M8 36q12-5 24 2v16q-12-7-24-2z" fill="#fff"/><path d="M56 36q-12-5-24 2v16q12-7 24-2z" fill="#C9D1F5"/></symbol>
   <symbol id="d-escola" viewBox="0 0 24 24"><path class="db" d="M3 10.5 12 5l9 5.5V20H3z"/><path class="da" d="M12 2.5 1.5 9l1.2 1.7L12 5l9.3 5.7L22.5 9zM10 14h4v6h-4z"/><path class="da" d="M5 12h3v3H5zm11 0h3v3h-3z"/></symbol>
   <symbol id="d-painel" viewBox="0 0 24 24"><rect class="da" x="3" y="3" width="8" height="8" rx="2"/><rect class="db" x="13" y="3" width="8" height="8" rx="2"/><rect class="db" x="3" y="13" width="8" height="8" rx="2"/><rect class="da" x="13" y="13" width="8" height="8" rx="2"/></symbol>
   <symbol id="d-aprend" viewBox="0 0 24 24"><rect class="db" x="3" y="12" width="4" height="9" rx="1"/><rect class="da" x="10" y="7" width="4" height="14" rx="1"/><rect class="db" x="17" y="3" width="4" height="18" rx="1"/></symbol>
@@ -450,7 +449,7 @@ td.ruim{color:var(--bad); font-weight:700}
   <header class="top">
     <a class="brand" href="#painel" aria-label="Educa Já, início">
       <svg class="logo" aria-hidden="true"><use href="#d-logo"/></svg>
-      <span><b>Educa <em>Já</em></b><small>Educação do seu município</small></span>
+      <b>educa <em>já</em></b>
     </a>
     <nav class="views" aria-label="Seções">
       <button type="button" data-view="painel" aria-pressed="true"><svg class="dico" aria-hidden="true"><use href="#d-painel"/></svg><span>Painel</span></button>
