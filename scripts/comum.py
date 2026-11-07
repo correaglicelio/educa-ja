@@ -439,3 +439,46 @@ def resumo_github(linhas: list[str]) -> None:
     if arq:
         with open(arq, "a", encoding="utf-8") as f:
             f.write("\n".join(linhas) + "\n")
+
+
+# ---------------------------------------------------------------- municípios pelo nome
+# municípios que mudaram de nome e ainda aparecem com o nome antigo em bases do FNDE
+NOMES_ANTIGOS = {"EMBU|SP": "Embu das Artes", "AUGUSTO SEVERO|RN": "Campo Grande", "FORTALEZA DO TABOCAO|TO": "Tabocão",
+                 "PRESIDENTE JUSCELINO|RN": "Serra Caiada", "SAO VALERIO DA NATIVIDADE|TO": "São Valério",
+                 "SANTAREM|PB": "Joca Claudino", "SERIDO|PB": "São Vicente do Seridó", "PARATI|RJ": "Paraty",
+                 "ELDORADO DOS CARAJAS|PA": "Eldorado do Carajás", "POXOREO|MT": "Poxoréu",
+                 "SAO DOMINGOS DE POMBAL|PB": "São Domingos"}
+
+
+class CasadorMunicipios:
+    """Liga 'NOME DO MUNICÍPIO' + UF ao código IBGE, mesmo com grafias diferentes:
+    sem acento/apóstrofo, DO/DE trocados, nomes antigos e pequenas diferenças (o mais parecido da UF)."""
+
+    def __init__(self):
+        import difflib
+        self._difflib = difflib
+        mun = ler_json(DADOS_PUBLICOS / "municipios.json", {}) or {}
+        self.exato = {chave_nome(n, uf): cod for cod, n, uf in mun.get("m", [])}
+        self.solto_idx = {self.solto(n, uf): cod for cod, n, uf in mun.get("m", [])}
+        self.cache: dict = {}
+        self.faltando: set = set()
+
+    @staticmethod
+    def solto(nome: str, uf: str) -> str:
+        palavras = [w for w in chave_nome(nome).split() if w not in ("D", "DE", "DA", "DO", "DAS", "DOS")]
+        return "".join(palavras).replace("DOESTE", "OESTE") + "|" + uf.upper()
+
+    def codigo(self, nome: str, uf: str) -> int | None:
+        k = chave_nome(nome, uf)
+        if k in self.cache:
+            return self.cache[k]
+        nome2 = NOMES_ANTIGOS.get(k, nome)
+        cod = self.exato.get(chave_nome(nome2, uf)) or self.solto_idx.get(self.solto(nome2, uf))
+        if not cod:
+            s = self.solto(nome2, uf)
+            achou = self._difflib.get_close_matches(s, [x for x in self.solto_idx if x.endswith("|" + uf.upper())], n=1, cutoff=0.88)
+            cod = self.solto_idx[achou[0]] if achou else None
+        if not cod:
+            self.faltando.add(k)
+        self.cache[k] = cod
+        return cod
