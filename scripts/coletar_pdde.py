@@ -29,7 +29,7 @@ API = "https://www.fnde.gov.br/plataforma-antonieta-de-barros-api/products/data-
 SAIDA = c.DADOS_PUBLICOS / "pdde"
 
 
-def ler(produto: int):
+def ler(produto: int, curto: bool = False):
     with c.abrir(API.format(id=produto) + "artifact", timeout=300) as resp:
         texto = io.TextIOWrapper(gzip.GzipFile(fileobj=resp), encoding="utf-8", errors="replace")
         cab = None
@@ -40,6 +40,11 @@ def ler(produto: int):
                 continue
             if len(col) >= len(cab):
                 yield dict(zip(cab, (x.strip() for x in col)))
+            elif curto and len(col) >= 6:
+                # linha sem os dados da associação (acontece com cadastro "NÃO"): o começo e as duas últimas colunas valem
+                d = dict(zip(cab, (x.strip() for x in col)))
+                d.update(zip(cab[-2:], (x.strip() for x in col[-2:])))
+                yield d
 
 
 def atualizado(produto: int) -> str | None:
@@ -124,7 +129,7 @@ def main() -> None:
     # 4) atualização cadastral do ano mais recente (produto 59)
     n = 0
     try:
-        for d in ler(59):
+        for d in ler(59, curto=True):
             cod = c.inteiro(d.get("co_escola"))
             if not cod or cod // 1_000_000 not in cods:
                 continue
