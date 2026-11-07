@@ -18,6 +18,7 @@ import io
 import json
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -34,7 +35,7 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
       "Accept-Language": "pt-BR,pt;q=0.9", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"}
 
 
-def baixar_catalogo() -> str:
+def baixar_catalogo(ufs: list[str]) -> str:
     jar = http.cookiejar.CookieJar()
     op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     ultimo = None
@@ -52,14 +53,23 @@ def baixar_catalogo() -> str:
                 c.log(f"   sessão: {sorted(k.name for k in jar)}; resposta: {titulo.group(1).strip() if titulo else resp[:80]!r}")
             else:
                 c.log(f"   página inicial sem formulário de acesso: {pagina[:200]!r}")
-            with op.open(urllib.request.Request(CSV_URL, headers=UA), timeout=900) as r:
-                tipo = r.headers.get("Content-Type", "")
-                dados = r.read()
+            partes = []
+            for uf in ufs:   # a exportação do INEP para em 100 mil linhas: pedimos um estado por vez
+                url = CSV_URL + "&P0=1&P1=eq&P2=" + urllib.parse.quote('"D - Localidade Escola"."Sigla Uf"') + "&P3=" + uf
+                with op.open(urllib.request.Request(url, headers=UA), timeout=600) as r:
+                    tipo = r.headers.get("Content-Type", "")
+                    dados = r.read()
+                if "csv" not in tipo:
+                    break
+                txt = dados.decode("utf-8-sig", errors="replace")
+                partes.append(txt if not partes else txt.split("\n", 1)[1] if "\n" in txt else "")
+                c.log(f"      {uf}: {txt.count(chr(10)) - 1:,} escolas")
+                time.sleep(2)
+            else:
+                return "\n".join(p.rstrip("\r\n") for p in partes)
             if "csv" not in tipo:
                 visivel = re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", dados.decode("utf-8", "replace"), flags=re.S)
                 raise RuntimeError(f"o INEP devolveu {tipo} em vez de CSV: {' '.join(visivel.split())[:300]}")
-            c.log(f"   catálogo: {len(dados) / 1e6:.1f} MB")
-            return dados.decode("utf-8-sig", errors="replace")
         except Exception as e:  # noqa: BLE001
             ultimo = e
             c.log(f"   tentativa {tentativa + 1} falhou: {str(e)[:120]}")
@@ -78,7 +88,7 @@ def main() -> None:
     ufs = c.ufs_escolhidas()
     siglas = set(ufs)
     c.log(f"Educa Já - localização das escolas (Catálogo do INEP) - UFs: {'todas' if len(ufs) == 27 else ', '.join(ufs)}")
-    texto = baixar_catalogo()
+    texto = baixar_catalogo(ufs)
     por_uf: dict[str, dict] = {}
     total = sem = 0
     for d in csv.DictReader(io.StringIO(texto)):
