@@ -76,6 +76,48 @@ def baixar_catalogo(ufs: list[str]) -> str:
     raise RuntimeError(f"Não consegui baixar o Catálogo de Escolas: {ultimo}")
 
 
+OVERPASS = ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter")
+PALAVRAS_FRACAS = {"ESCOLA", "ESC", "E", "EM", "EE", "EMEF", "EMEI", "EMEIEF", "EEEF", "EEEM", "MUNICIPAL", "ESTADUAL",
+                   "CEI", "CMEI", "CENTRO", "EDUCACIONAL", "EDUCACAO", "INFANTIL", "DE", "DA", "DO", "DOS", "DAS",
+                   "PROF", "PROFESSOR", "PROFESSORA", "ENSINO", "FUNDAMENTAL", "MEDIO", "CRECHE", "COLEGIO", "UNIDADE"}
+
+
+def nucleo(nome: str) -> str:
+    """'EM Professora Rosilei Pereira dos Santos' -> 'ROSILEI PEREIRA SANTOS' (sem prefixos e palavras de ligação)."""
+    palavras = re.sub(r"[^A-Z0-9 ]", " ", c.sem_acento(nome or "").upper()).split()
+    return " ".join(w for w in palavras if w not in PALAVRAS_FRACAS and len(w) > 1)
+
+
+def escolas_osm(uf: str) -> list[tuple[str, float, float]]:
+    q = (f'[out:json][timeout:180];area["ISO3166-2"="BR-{uf}"]->.a;'
+         '(nwr["amenity"~"^(school|kindergarten|college)$"](area.a););out tags center;')
+    for srv in OVERPASS:
+        try:
+            req = urllib.request.Request(srv, data=("data=" + urllib.parse.quote(q)).encode(), headers={"User-Agent": "EducaJa/1.0 (dados abertos)"})
+            with urllib.request.urlopen(req, timeout=240) as r:
+                el = json.load(r).get("elements", [])
+            out = []
+            for e in el:
+                nome = (e.get("tags") or {}).get("name")
+                lat = e.get("lat") or (e.get("center") or {}).get("lat")
+                lon = e.get("lon") or (e.get("center") or {}).get("lon")
+                if nome and lat and lon:
+                    out.append((nucleo(nome), round(lat, 5), round(lon, 5)))
+            return out
+        except Exception as e:  # noqa: BLE001
+            c.log(f"      OpenStreetMap {uf} ({srv.split('/')[2]}): {str(e)[:80]}")
+            time.sleep(10)
+    return []
+
+
+def km(a, b) -> float:
+    import math
+    dy = (a[0] - b[0]) * 111
+    dx = (a[1] - b[1]) * 111 * math.cos(math.radians(a[0]))
+    return (dx * dx + dy * dy) ** .5
+
+
 def coord(v: str) -> float | None:
     try:
         x = float(v.replace(",", "."))
@@ -90,6 +132,8 @@ def main() -> None:
     c.log(f"Educa Já - localização das escolas (Catálogo do INEP) - UFs: {'todas' if len(ufs) == 27 else ', '.join(ufs)}")
     texto = baixar_catalogo(ufs)
     por_uf: dict[str, dict] = {}
+    nomes: dict[str, tuple] = {}          # escola -> (núcleo do nome, código do município)
+    casa = c.CasadorMunicipios()
     total = sem = 0
     for d in csv.DictReader(io.StringIO(texto)):
         uf = (d.get("UF") or "").strip()
@@ -106,8 +150,35 @@ def main() -> None:
         end = " ".join((d.get("Endereço") or "").split()).rstrip(".")
         tel = (d.get("Telefone") or "").strip()
         por_uf.setdefault(uf, {})[str(cod)] = [lat, lon, end, tel]
+        nomes[str(cod)] = (nucleo(d.get("Escola", "")), casa.codigo(d.get("Município", ""), uf))
         total += 1
-    c.log(f"   {total:,} escolas; sem localização válida: {sem:,}")
+    c.log(f"   {total:,} escolas; sem localização válida no Catálogo: {sem:,}")
+    # completa com o OpenStreetMap: nome parecido e perto das outras escolas do mesmo município
+    import difflib
+    achadas = 0
+    for uf in ufs:
+        faltam = [k for k, v in por_uf.get(uf, {}).items() if v[0] is None and nomes[k][0] and nomes[k][1]]
+        if not faltam:
+            continue
+        centro: dict = {}
+        for k, v in por_uf[uf].items():
+            if v[0] is not None and nomes[k][1]:
+                centro.setdefault(nomes[k][1], []).append((v[0], v[1]))
+        centro = {m: (sorted(p[0] for p in ps)[len(ps) // 2], sorted(p[1] for p in ps)[len(ps) // 2]) for m, ps in centro.items()}
+        osm = escolas_osm(uf)
+        time.sleep(3)
+        for k in faltam:
+            nome, mun = nomes[k]
+            if mun not in centro:
+                continue
+            perto = [o for o in osm if km(centro[mun], (o[1], o[2])) < 40]
+            melhor = max(perto, key=lambda o: difflib.SequenceMatcher(None, nome, o[0]).ratio(), default=None)
+            if melhor and difflib.SequenceMatcher(None, nome, melhor[0]).ratio() >= 0.86:
+                por_uf[uf][k][0:2] = [melhor[1], melhor[2]]
+                por_uf[uf][k].append(1)        # 1 = localização vinda do OpenStreetMap
+                achadas += 1
+        c.log(f"      {uf}: {len(osm):,} escolas no OpenStreetMap; completadas até agora: {achadas:,}")
+    c.log(f"   localizações completadas pelo OpenStreetMap: {achadas:,}")
     gerados = []
     for uf in ufs:
         if uf not in por_uf:
@@ -120,7 +191,8 @@ def main() -> None:
     antigo = c.ler_json(SAIDA / "meta.json", {}) or {}
     c.salvar_json(SAIDA / "meta.json", {
         "gerado_em": c.agora_iso(), "ufs": sorted(set(antigo.get("ufs", [])) | set(gerados)),
-        "fonte": "INEP, Catálogo de Escolas (InepData): endereço, telefone e localização informados pelas escolas no Censo Escolar",
+        "fonte": "INEP, Catálogo de Escolas (InepData): endereço, telefone e localização informados pelas escolas no Censo Escolar; "
+                 "localizações que faltavam completadas pelo OpenStreetMap (© colaboradores do OpenStreetMap, ODbL)",
         "aviso": "A localização é informada pela própria escola e pode ter erros. Confira o endereço antes de ir.",
     })
     pl = por_uf.get("MT", {})
