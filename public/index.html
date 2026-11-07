@@ -1007,7 +1007,7 @@ async function desenharMapa(){
     com++;
     const raio = Math.max(4, Math.min(12, 3 + Math.sqrt(r[C.mat_total] || 0) / 4));
     L.circleMarker([l[0], l[1]], {radius: raio, color: "#fff", weight: 1.5, fillColor: COR_REDE[r[C.rede]].startsWith("var") ? cssVar(COR_REDE[r[C.rede]].slice(4, -1)) : COR_REDE[r[C.rede]], fillOpacity: .9})
-      .bindPopup(`<b>${esc(tituloEscola(r[C.nome]))}</b><br>${REDE[r[C.rede]]} · ${fmt(r[C.mat_total] || 0)} alunos${l[4] ? "<br><small>localização aproximada (OpenStreetMap)</small>" : ""}<br><button type="button" class="btn" data-esc="${r[C.codigo]}">Ver ficha da escola</button>`)
+      .bindPopup(`<b>${esc(tituloEscola(r[C.nome]))}</b><br>${REDE[r[C.rede]]} · ${fmt(r[C.mat_total] || 0)} alunos<br><button type="button" class="btn" data-esc="${r[C.codigo]}">Ver ficha da escola</button>`)
       .addTo(CAMADA);
   }
   const info = $("#e-map-info"); if (info) info.textContent = `${fmt(com)} de ${fmt(rows.length)} escolas em atividade têm localização${rows.length - com ? `; ${fmt(rows.length - com)} sem localização no INEP` : ""}`;
@@ -2224,7 +2224,7 @@ function abrirFicha(cod, {semHistorico} = {}){
           ${l[2] ? `<p style="margin:0 0 10px;font-size:14.5px;line-height:1.45"><span style="display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)">Endereço</span>${esc(tituloEscola(l[2]).replace(/\b(Mt|Ms|Go|Ro|Ac|Am|Pa|Sp|Rj|Mg|Pr|Sc|Rs|Ba|Pe|Ce|Pi|Ma|Pb|Rn|Al|Se|Es|To|Ap|Rr|Df)$/, m => m.toUpperCase()))}</p>` : ""}
           <div class="dl">
           ${l[3] ? `<span>Telefone</span><span><a href="tel:+55${tel}">${esc(l[3])}</a></span>` : ""}
-          ${l[0] != null ? `<span>Mapa</span><span><a href="https://www.openstreetmap.org/?mlat=${l[0]}&mlon=${l[1]}#map=17/${l[0]}/${l[1]}" target="_blank" rel="noopener">ver no mapa</a> · <a href="https://www.google.com/maps/dir/?api=1&destination=${l[0]},${l[1]}" target="_blank" rel="noopener">como chegar</a>${l[4] ? " <small style='color:var(--muted)'>(localização aproximada)</small>" : ""}</span>` : ""}
+          ${l[0] != null ? `<span>Mapa</span><span><a href="https://www.openstreetmap.org/?mlat=${l[0]}&mlon=${l[1]}#map=17/${l[0]}/${l[1]}" target="_blank" rel="noopener">ver no mapa</a> · <a href="https://www.google.com/maps/dir/?api=1&destination=${l[0]},${l[1]}" target="_blank" rel="noopener">como chegar</a></span>` : ""}
         </div><p class="src" style="margin-top:6px">Endereço e telefone informados pela escola ao INEP. Confira antes de ir.</p></div>`; })()}
       <div class="nums">
         <div class="num"><b>${fmt(r[C.mat_total] || 0)}</b><span>alunos</span></div>
