@@ -71,6 +71,11 @@ jobs:
         run: python scripts/coletar_merenda.py --uf todas
         continue-on-error: true
         timeout-minutes: 30
+      - name: Dinheiro na escola (PDDE, FNDE)
+        id: pdde
+        run: python scripts/coletar_pdde.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 30
       - name: ENEM por escola (INEP; só baixa quando sai edição nova)
         id: enem
         run: |
@@ -94,6 +99,7 @@ jobs:
             echo "| Fluxo escolar | ${{ steps.fluxo.outcome }} |"
             echo "| Repasses mês a mês | ${{ steps.transferencias.outcome }} |"
             echo "| Merenda (PNAE) | ${{ steps.merenda.outcome }} |"
+            echo "| PDDE | ${{ steps.pdde.outcome }} |"
             echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
             echo "success = atualizado · failure = falhou (ficam os dados da semana anterior)"
