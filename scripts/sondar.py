@@ -46,56 +46,58 @@ def links(url: str, filtro: str) -> None:
         c.log(f"\n## {url}: ERRO {str(e)[:120]}")
 
 
-# 1) Indicadores educacionais do INEP (2025): o que existe além de rendimento, TDI, ATU e HAD
-IND = "https://download.inep.gov.br/informacoes_estatisticas/indicadores_educacionais/{ano}/{nome}"
-c.log("# Indicadores educacionais (arquivos por escola)")
-for ano in (2025, 2024):
-    for sig in ("AFD", "IRD", "IED", "ICG", "DSU", "TNR"):
-        for nome in (f"{sig}_{ano}_ESCOLAS.zip", f"{sig}_{ano}_MUNICIPIOS.zip"):
-            c.log(f"   {ano} {nome}: {cabeca(IND.format(ano=ano, nome=nome))}")
-links("https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais", r"\.zip|\.xlsx|indicador")
+def pegar(url: str, limite: int = 3_000_000):  # noqa: F811  (usa o abridor do projeto, que lida com o certificado do INEP)
+    with c.abrir(url, tentativas=2, cabecalhos=UA) as r:
+        return r.status, dict(r.headers), r.read(limite)
 
-# 2) INSE (nível socioeconômico) e Criança Alfabetizada
-links("https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais/nivel-socioeconomico", r"inse|\.zip|\.xlsx")
-for u in ("https://download.inep.gov.br/informacoes_estatisticas/indicadores_educacionais/2021/nivel_socioeconomico/INSE_2021_escolas.xlsx",
-          "https://download.inep.gov.br/informacoes_estatisticas/indicadores_educacionais/2023/nivel_socioeconomico/INSE_2023_escolas.xlsx",
-          "https://download.inep.gov.br/informacoes_estatisticas/indicadores_educacionais/2023/nivel_socioeconomico/INSE_2023.zip"):
-    c.log(f"   {u}: {cabeca(u)}")
-links("https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-educacionais/compromisso-nacional-crianca-alfabetizada", r"alfabetiz|\.xlsx|\.zip|\.csv|resultado")
-links("https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/avaliacao-da-alfabetizacao", r"\.zip|\.xlsx|\.csv")
 
-# 3) Catálogo de produtos de dados do FNDE (Plataforma Antonieta de Barros)
-API = "https://www.fnde.gov.br/plataforma-antonieta-de-barros-api/products/data-products"
-c.log("\n# FNDE - produtos de dados")
-try:
-    st, h, b = pegar(API)
-    if h.get("Content-Encoding") == "gzip":
-        b = gzip.decompress(b)
-    d = json.loads(b)
-    itens = d if isinstance(d, list) else d.get("content") or d.get("items") or d.get("data") or []
-    c.log(f"   {len(itens)} produtos (chaves: {list(itens[0].keys()) if itens else d if not isinstance(d, list) else ''})"[:400])
-    for p in itens:
-        c.log(f"   {p.get('id')}: {p.get('name') or p.get('title') or p.get('nome')}")
-except Exception as e:  # noqa: BLE001
-    c.log(f"   lista falhou ({str(e)[:100]}); testando ids 1-120")
-    for i in range(1, 121):
-        try:
-            st, h, b = pegar(f"{API}/{i}", 200_000)
-            d = json.loads(b)
-            c.log(f"   {i}: {d.get('name') or d.get('title') or d.get('nome')} | {str(d.get('description') or '')[:90]}")
-        except Exception as e2:  # noqa: BLE001
-            if "404" not in str(e2):
-                c.log(f"   {i}: {str(e2)[:60]}")
-
-# 4) Obras (ObrasGov, API pública) e conectividade das escolas
-for u in ("https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento?uf=MT&pagina=0&tamanhoDaPagina=3",
-          "https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento?uf=MT&municipio=Pontes%20e%20Lacerda&pagina=0&tamanhoDaPagina=20"):
+def cabeca(url: str) -> str:  # noqa: F811
     try:
-        st, h, b = pegar(u)
-        c.log(f"\n## {u} ({st}): {b[:1500].decode('utf-8', 'replace')}")
+        with c.abrir(url, tentativas=2, metodo="HEAD", cabecalhos=UA) as r:
+            return f"{r.status} {int(r.headers.get('Content-Length') or 0) / 1e6:.1f} MB {r.headers.get('Last-Modified', '')}"
     except Exception as e:  # noqa: BLE001
-        c.log(f"\n## {u}: ERRO {str(e)[:120]}")
-links("https://www.gov.br/mec/pt-br/escolas-conectadas/painel-de-monitoramento", r"\.csv|\.xlsx|\.zip|dados|painel|powerbi|app\.")
+        return f"ERRO {str(e)[:80]}"
 
-# 5) Portal da Transparência: bases para baixar (Pé-de-Meia, Bolsa Família, etc.)
-links("https://portaldatransparencia.gov.br/download-de-dados", r"download-de-dados/")
+
+G = "https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/indicadores-educacionais/"
+c.log("# Páginas dos indicadores (links de download)")
+for pag in ("adequacao-da-formacao-docente", "complexidade-de-gestao-da-escola", "esforco-docente", "regularidade-do-corpo-docente",
+            "remuneracao-media-dos-docentes", "nivel-socioeconomico", "taxas-de-transicao", "percentual-de-docentes-com-curso-superior"):
+    links(G + pag, r"download\.inep|\.zip|\.xlsx")
+for u in ("https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-educacionais/saeb/resultados",
+          "https://www.gov.br/mec/pt-br/crianca-alfabetizada", "https://www.gov.br/inep/pt-br/assuntos/noticias/saeb"):
+    links(u, r"alfabetiz|download\.inep|\.xlsx|\.zip")
+
+c.log("\n# FNDE - todos os produtos")
+for pg in range(0, 15):
+    try:
+        st, h, b = pegar(f"https://www.fnde.gov.br/plataforma-antonieta-de-barros-api/products/data-products?page={pg}&size=10")
+        if h.get("Content-Encoding") == "gzip":
+            b = gzip.decompress(b)
+        d = json.loads(b)
+        itens = d if isinstance(d, list) else d.get("content") or d.get("items") or d.get("data") or []
+        if pg == 0 and not isinstance(d, list):
+            c.log(f"   chaves da página: {[k for k in d if k not in ('content', 'items', 'data')]} {dict((k, d[k]) for k in d if k in ('totalElements', 'totalPages', 'total'))}")
+        if not itens:
+            break
+        for p in itens:
+            c.log(f"   {p.get('id')}: {p.get('name')} | atualizado {p.get('updatedAt')}")
+    except Exception as e:  # noqa: BLE001
+        c.log(f"   página {pg}: {str(e)[:100]}")
+        break
+
+c.log("\n# ObrasGov")
+for q in ("uf=MT&pagina=0&tamanhoDaPagina=1", "uf=MT&codigoMunicipio=5106752&pagina=0&tamanhoDaPagina=5",
+          "uf=MT&municipio=PONTES%20E%20LACERDA&pagina=0&tamanhoDaPagina=5", "uf=MT&natureza=Obra&pagina=0&tamanhoDaPagina=1"):
+    try:
+        st, h, b = pegar("https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento?" + q)
+        d = json.loads(b)
+        cont = d.get("content", [])
+        c.log(f"   {q}: total {d.get('totalElements') or d.get('totalRegistros')} | chaves {[k for k in d if k != 'content']}")
+        for o in cont[:5]:
+            c.log("      " + json.dumps(o, ensure_ascii=False)[:900])
+    except Exception as e:  # noqa: BLE001
+        c.log(f"   {q}: ERRO {str(e)[:100]}")
+
+links("https://portaldatransparencia.gov.br/download-de-dados/pe-de-meia", r"pe-de-meia|\.zip|20\d\d")
+links("https://portaldatransparencia.gov.br/download-de-dados/novo-bolsa-familia", r"bolsa|\.zip|20\d\d")
