@@ -81,6 +81,11 @@ jobs:
         run: python scripts/coletar_transporte.py --uf todas
         continue-on-error: true
         timeout-minutes: 20
+      - name: Professores e nível socioeconômico (INEP)
+        id: professores
+        run: python scripts/coletar_professores.py --uf todas
+        continue-on-error: true
+        timeout-minutes: 40
       - name: Endereço e localização das escolas (Catálogo do INEP)
         id: locais
         run: python scripts/coletar_locais.py --uf todas
@@ -111,6 +116,7 @@ jobs:
             echo "| Merenda (PNAE) | ${{ steps.merenda.outcome }} |"
             echo "| PDDE | ${{ steps.pdde.outcome }} |"
             echo "| Transporte | ${{ steps.transporte.outcome }} |"
+            echo "| Professores e Inse | ${{ steps.professores.outcome }} |"
             echo "| Localização das escolas | ${{ steps.locais.outcome }} |"
             echo "| ENEM | ${{ steps.enem.outcome }} |"
             echo ""
