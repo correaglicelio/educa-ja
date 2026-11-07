@@ -140,6 +140,7 @@ def main() -> None:
             c.log(f"   INSE: {e}")
         b = INSE_BASE.format(ano=ai) if ai else None
         combos = set()
+        cortes: dict[int, float] = {}
         for nome, nivel in (((f"INSE_{ai}_escolas.xlsx", "esc"), (f"INSE_{ai}_municipios.xlsx", "mun"), (f"INSE_{ai}_estados.xlsx", "uf")) if ai else ()):
             arq = tmp / nome
             try:
@@ -160,10 +161,12 @@ def main() -> None:
                     continue
                 if nivel == "esc":
                     cod = c.inteiro(d.get("ID_ESCOLA"))
+                    cl = str(d.get("INSE_CLASSIFICACAO", "")).replace("Nível", "").strip()
                     if cod and cod // 1000000 in cod_ufs:
-                        cl = str(d.get("INSE_CLASSIFICACAO", "")).replace("Nível", "").strip()
                         esc.setdefault(str(cod), {})["inse"] = [media, ROMANO.get(cl), qtd]
                         n += 1
+                    if ROMANO.get(cl):     # menor média de cada nível: usada para classificar município e estado
+                        cortes[ROMANO[cl]] = min(cortes.get(ROMANO[cl], 99), media)
                     continue
                 rede, loc = str(d.get("TP_TIPO_REDE", "")).strip(), str(d.get("TP_LOCALIZACAO", "")).strip()
                 cap = str(d.get("TP_CAPITAL", "")).strip()
@@ -207,6 +210,7 @@ def main() -> None:
     mesmos = meta_ant.get("ano") == ano
     c.salvar_json(SAIDA / "meta.json", {
         "gerado_em": c.agora_iso(), "ano": ano, "ano_inse": ai or meta_ant.get("ano_inse"),
+        "inse_cortes": {str(k): cortes[k] for k in sorted(cortes)} if cortes else meta_ant.get("inse_cortes"),
         "ufs": sorted(set(meta_ant.get("ufs", [])) | set(gerados)) if mesmos else gerados,
         "fonte": f"INEP, Indicadores Educacionais do Censo Escolar {ano} (formação, regularidade e esforço dos professores, "
                  f"complexidade de gestão) e Indicador de Nível Socioeconômico (Inse) do Saeb {ai}",
@@ -215,6 +219,7 @@ def main() -> None:
             f"Saeb e o de {ai + 2} ainda não saiu." if ai else ""),
     })
     pl = mun.get("5106752", {})
+    c.log(f"   cortes do Inse (menor média de cada nível): {dict(sorted(cortes.items()))}")
     if pl:
         t = pl.get("Total", {})
         txt = (f"formação adequada (anos iniciais) {((t.get('afd') or [[None]] * 4)[1] or [None])[0]}%; "
