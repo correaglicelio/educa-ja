@@ -1010,8 +1010,19 @@ async function desenharMapa(){
       .bindPopup(`<b>${esc(tituloEscola(r[C.nome]))}</b><br>${REDE[r[C.rede]]} · ${fmt(r[C.mat_total] || 0)} alunos<br><button type="button" class="btn" data-esc="${r[C.codigo]}">Ver ficha da escola</button>`)
       .addTo(CAMADA);
   }
-  const info = $("#e-map-info"); if (info) info.textContent = `${fmt(com)} de ${fmt(rows.length)} escolas em atividade têm localização${rows.length - com ? `; ${fmt(rows.length - com)} sem localização no INEP` : ""}`;
-  if (com) MAPA.fitBounds(CAMADA.getBounds().pad(.08), {maxZoom: 15}); else MAPA.setView([-15.6, -56.1], 5);
+  // enquadra o núcleo das escolas: as poucas muito afastadas (zona rural) não "puxam" o mapa para longe
+  const pts = CAMADA.getLayers().map(m => m.getLatLng());
+  let alvo = pts, longe = 0;
+  if (S.mun && pts.length >= 5){
+    const med = a => { const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+    const c0 = L.latLng(med(pts.map(p => p.lat)), med(pts.map(p => p.lng)));
+    const d = pts.map(p => p.distanceTo(c0));
+    const lim = Math.max(med(d) * 4, 3000);
+    alvo = pts.filter((p, i) => d[i] <= lim);
+    longe = pts.length - alvo.length;
+  }
+  const info = $("#e-map-info"); if (info) info.textContent = `${fmt(com)} de ${fmt(rows.length)} escolas em atividade têm localização${rows.length - com ? `; ${fmt(rows.length - com)} sem localização no INEP` : ""}${longe ? `. Afaste o mapa (−) para ver ${longe === 1 ? "a escola mais distante" : `as ${fmt(longe)} mais distantes`}` : ""}`;
+  if (com) MAPA.fitBounds(L.latLngBounds(alvo).pad(.08), {maxZoom: 15}); else MAPA.setView([-15.6, -56.1], 5);
 }
 const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function renderLista(){
