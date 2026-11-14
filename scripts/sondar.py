@@ -1,36 +1,43 @@
-"""Sonda RÁPIDA 2: ObrasGov MT - tamanho, situações, datas, município?"""
+"""Sonda RÁPIDA: Portal da Transparência para o Contas Já."""
 from __future__ import annotations
-import json, sys, collections, time
-T0 = time.time()
+import csv, io, sys, zipfile, collections, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comum as c  # noqa: E402
 
-B = "https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento"
-tot = []
-p = 0
-while True:
-    try:
-        with c.abrir(f"{B}?uf=MT&pagina={p}&tamanhoDaPagina=100", tentativas=2, timeout=120) as r:
-            j = json.loads(r.read())
-    except Exception as e:  # noqa: BLE001
-        c.log(f"FALHOU pg {p}: {str(e)[:150]}"); break
-    tot += j["content"]
-    c.log(f"pg {p}: {len(j['content'])} (total declarado {j.get('totalElements')}, páginas {j.get('totalPages')})")
-    p += 1
-    if j.get("last") or p >= 60 or time.time() - T0 > 420: break
-c.log(f"itens: {len(tot)}; bytes ~{len(json.dumps(tot))//1024} KB")
-cnt = lambda f: collections.Counter(f(x) for x in tot).most_common(12)
-c.log("situação: " + str(cnt(lambda x: x["situacao"])))
-c.log("natureza: " + str(cnt(lambda x: x["natureza"])))
-c.log("ano cadastro: " + str(sorted(collections.Counter((x["dataCadastro"] or "")[:4] for x in tot).items())))
-c.log("ano situação: " + str(sorted(collections.Counter((x["dataSituacao"] or "")[:4] for x in tot).items())[-6:]))
-c.log("com cep: %d, com endereço: %d" % (sum(bool(x["cep"]) for x in tot), sum(bool(x["endereco"]) for x in tot)))
-c.log("nome termina '- MT': %d" % sum(x["nome"].strip().upper().endswith("MT") for x in tot))
-c.log("com valor previsto: %d; soma R$ %.0f" % (sum(bool(x["fontesDeRecurso"]) for x in tot), sum(f.get("valorInvestimentoPrevisto") or 0 for x in tot for f in x["fontesDeRecurso"])))
-c.log("executores: " + str(collections.Counter(e["nome"] for x in tot for e in x["executores"]).most_common(6)))
-c.log("tomadores: " + str(collections.Counter(e["nome"] for x in tot for e in x["tomadores"]).most_common(6)))
-pl = [x for x in tot if "PONTES E LACERDA" in json.dumps(x, ensure_ascii=False).upper()]
-c.log(f"menciona Pontes e Lacerda: {len(pl)}")
-for x in pl[:4]: c.log("  " + x["nome"][:110] + " | " + str(x["situacao"]) + " | " + str(x["endereco"]) + " | " + str(x["cep"]))
-c.log("chaves extras com endereço: " + str([(x["endereco"], x["cep"]) for x in tot if x["endereco"]][:4]))
+P = "https://portaldatransparencia.gov.br/download-de-dados/"
+def vr(t):
+    try: return float(t.strip().replace(".", "").replace(",", "."))
+    except ValueError: return 0.0
+t0 = time.time()
+c.log("# transferências 202609")
+with c.abrir(P + "transferencias/202609", timeout=300) as r:
+    raw = r.read()
+c.log(f"   zip {len(raw)/1e6:.1f} MB em {time.time()-t0:.0f}s")
+z = zipfile.ZipFile(io.BytesIO(raw))
+c.log("   arquivos: " + str(z.namelist()))
+with z.open(z.namelist()[0]) as f:
+    rd = csv.reader(io.TextIOWrapper(f, encoding="latin-1"), delimiter=";")
+    cab = next(rd); c.log("   colunas: " + " | ".join(cab))
+    ix = {k: i for i, k in enumerate(cab)}
+    n = 0; porf = collections.Counter(); pl = collections.Counter(); tot_mun = collections.Counter(); ufs = collections.Counter(); ex = []
+    for l in rd:
+        n += 1
+        v = vr(l[ix["VALOR TRANSFERIDO"]])
+        ufs[l[ix["UF"]]] += v
+        if l[ix["UF"]] == "MT" and "PONTES E LACERDA" in l[ix["NOME MUNICÍPIO"]].upper():
+            porf[(l[ix.get("NOME FUNÇÃO", ix["AÇÃO"])] if "NOME FUNÇÃO" in ix else "", l[ix["AÇÃO"]], l[ix.get("NOME AÇÃO", ix["AÇÃO"])] if "NOME AÇÃO" in ix else "")] += v
+            pl[l[ix["TIPO FAVORECIDO"]]] += v
+            if len(ex) < 2: ex.append(l)
+    c.log(f"   linhas {n:,}; UFs com valor {len(ufs)}")
+    c.log("   exemplo PL: " + str(ex))
+    c.log("   PL por tipo de favorecido: " + str(pl.most_common(5)))
+    for k, v in porf.most_common(12): c.log(f"   PL {v:12,.2f}  {k}")
+for ref in ("202610", "202611"):
+    for ds in ("novo-bolsa-familia", "transferencias"):
+        try:
+            with c.abrir(P + f"{ds}/{ref}", metodo="HEAD", tentativas=1, timeout=60) as r:
+                c.log(f"# HEAD {ds}/{ref}: {r.status} {r.headers.get('Content-Length')} bytes")
+        except Exception as e:  # noqa: BLE001
+            c.log(f"# HEAD {ds}/{ref}: {str(e)[:80]}")
+        time.sleep(5)
