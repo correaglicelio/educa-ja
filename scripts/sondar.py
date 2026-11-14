@@ -12,28 +12,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comum as c  # noqa: E402
 
 ALVOS = [
-    ("Ambiente: INPE focos (lista de arquivos mensais)", "https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/mensal/Brasil/"),
-    ("Ambiente: INPE focos (lista de arquivos diários)", "https://dataserver-coids.inpe.br/queimadas/queimadas/focos/csv/diario/Brasil/"),
-    ("Obras: ObrasGov API (MT, 3 registros)", "https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento?pagina=0&tamanhoDaPagina=3&uf=MT"),
-    ("Mobilidade: PRF dados abertos (página)", "https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos/dados-abertos-da-prf"),
-    ("Assistência: MDS dados abertos (página)", "https://www.gov.br/mds/pt-br/acesso-a-informacao/dados-abertos"),
-    ("Assistência: MDS VIS DATA API (Bolsa Família MT)", "https://aplicacoes.cidadania.gov.br/vis/data3/v.php?q[]=oNOclatmtN6xgpyrYWqKbWy3oa2ZmYlzgHx9o3zCiaOd"),
-    ("Trabalho: Novo Caged (página)", "https://www.gov.br/trabalho-e-emprego/pt-br/acesso-a-informacao/acoes-e-programas/programas-projetos-acoes-obras-e-atividades/estatisticas-trabalho/novo-caged"),
-    ("Campo: IBGE SIDRA (PAM soja, Pontes e Lacerda)", "https://apisidra.ibge.gov.br/values/t/1612/n6/5106752/v/216/p/last/c81/2713"),
-    ("Clima: INMET (estações)", "https://apitempo.inmet.gov.br/estacoes/T"),
-    ("Segurança: SINESP/MJ dados abertos (página)", "https://www.gov.br/mj/pt-br/assuntos/sua-seguranca/seguranca-publica/estatistica/dados-nacionais-1/base-de-dados-e-notas-metodologicas-dos-gestores-estaduais-sinesp-vde-2022-e-2023"),
+    ("Obras: ObrasGov API v2 (MT, 2 registros)", "https://api.obrasgov.gestao.gov.br/obrasgov/api/projeto-investimento?pagina=0&tamanhoDaPagina=2&uf=MT", 70),
+    ("Obras: ObrasGov (documentação/swagger)", "https://api.obrasgov.gestao.gov.br/obrasgov/swagger-ui/index.html", 40),
+    ("Mobilidade: PRF (links de dados)", "https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos/dados-abertos-da-prf", 40),
+    ("Assistência: Transparência, Novo Bolsa Família (página)", "https://portaldatransparencia.gov.br/download-de-dados/novo-bolsa-familia", 40),
+    ("Assistência: Transparência, API Bolsa Família por município (precisa chave?)", "https://api.portaldatransparencia.gov.br/api-de-dados/novo-bolsa-familia-por-municipio?mesAno=202509&codigoIbge=5106752&pagina=1", 40),
 ]
 
-for nome, url in ALVOS:
+for nome, url, lim in ALVOS:
     c.log(f"\n# {nome}\n   {url}")
     try:
-        with c.abrir(url, tentativas=1, timeout=25) as r:
+        with c.abrir(url, tentativas=1, timeout=lim) as r:
             tipo = r.headers.get("Content-Type", "?")
             tam = r.headers.get("Content-Length", "?")
             corpo = r.read(300_000)
         txt = corpo.decode("utf-8", "replace")
         c.log(f"   OK  tipo={tipo}  tamanho informado={tam}  lido={len(corpo):,} bytes")
-        links = re.findall(r'href="([^"]+\.(?:csv|zip|xlsx|json|gz|7z)[^"]*)"', txt, re.I)
+        links = re.findall(r'href="([^"]*(?:datatran|acidente|drive\.google|\.csv|\.zip|\.xlsx|\.7z|download|dados)[^"]*)"', txt, re.I)
+        links = [x for x in dict.fromkeys(links) if "gov.br/prf" in x or "drive" in x or "bolsa" in x.lower() or "obrasgov" in x][:12]
         if links:
             c.log(f"   {len(links)} links de arquivo; últimos: {links[-6:]}")
         if "json" in tipo.lower() or txt.lstrip().startswith(("{", "[")):
