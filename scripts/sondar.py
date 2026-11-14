@@ -1,6 +1,7 @@
 """Sonda RÁPIDA 2: ObrasGov MT - tamanho, situações, datas, município?"""
 from __future__ import annotations
-import json, sys, collections
+import json, sys, collections, time
+T0 = time.time()
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comum as c  # noqa: E402
@@ -10,14 +11,14 @@ tot = []
 p = 0
 while True:
     try:
-        with c.abrir(f"{B}?uf=MT&pagina={p}&tamanhoDaPagina=500", tentativas=2, timeout=90) as r:
+        with c.abrir(f"{B}?uf=MT&pagina={p}&tamanhoDaPagina=100", tentativas=2, timeout=120) as r:
             j = json.loads(r.read())
     except Exception as e:  # noqa: BLE001
         c.log(f"FALHOU pg {p}: {str(e)[:150]}"); break
     tot += j["content"]
     c.log(f"pg {p}: {len(j['content'])} (total declarado {j.get('totalElements')}, páginas {j.get('totalPages')})")
     p += 1
-    if j.get("last") or p >= 40: break
+    if j.get("last") or p >= 60 or time.time() - T0 > 420: break
 c.log(f"itens: {len(tot)}; bytes ~{len(json.dumps(tot))//1024} KB")
 cnt = lambda f: collections.Counter(f(x) for x in tot).most_common(12)
 c.log("situação: " + str(cnt(lambda x: x["situacao"])))
