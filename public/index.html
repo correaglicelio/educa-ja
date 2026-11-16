@@ -535,6 +535,13 @@ const store = {
   get(k){ try { return JSON.parse(localStorage.getItem("educaja:" + k)); } catch { return null; } },
   set(k, v){ try { localStorage.setItem("educaja:" + k, JSON.stringify(v)); } catch {} },
 };
+
+/* Cidade única do Hub Já: os 4 apps ficam no mesmo endereço (hubja.com.br) e compartilham esta escolha neste aparelho. */
+const hubCidade = {
+  pronto: false,   // só grava depois da abertura do app, para o ajuste automático de início não trocar a cidade escolhida
+  ler(){ try { const v = JSON.parse(localStorage.getItem("hubja:cidade")); return v && /^\d{6}$/.test(v.m6) ? v.m6 : null; } catch { return null; } },
+  gravar(mun){ try { if (mun && this.pronto) localStorage.setItem("hubja:cidade", JSON.stringify({m6: String(mun).slice(0, 6), em: Date.now()})); } catch {} },
+};
 const PADRAO = {uf: 51, mun: 5106752};
 const VIEWS = ["painel", "escolas", "aprendizagem", "gastos", "fluxo", "merenda", "pdde", "transporte"];
 const ICO_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';   // Mato Grosso, Pontes e Lacerda
@@ -744,7 +751,7 @@ async function pertoDeMim(){
     nota(err.code === 1 ? "A localização não foi liberada. Escolha o estado e o município, ou permita a localização nas configurações do navegador." : "Não foi possível obter sua localização agora. Escolha o estado e o município.", true);
   }, {enableHighAccuracy: false, timeout: 15000, maximumAge: 300000});
 }
-function salvarLocal(){ store.set("local", {uf: S.uf, mun: S.mun}); $("#todo-estado").hidden = !S.mun; }
+function salvarLocal(){ store.set("local", {uf: S.uf, mun: S.mun}); hubCidade.gravar(S.mun); $("#todo-estado").hidden = !S.mun; }
 
 /* sugestões próprias (a lista nativa do navegador fica ruim no app Android) */
 let sugIdx = -1, sugItens = [];
@@ -2530,7 +2537,7 @@ async function iniciar(){
     nota("Não foi possível carregar os dados. Verifique a conexão e recarregue a página.", true); return;
   }
   preencherUFs();
-  const salvo = store.get("local");
+  const m6 = hubCidade.ler(), mh = m6 && MUN.find(x => String(x[0]).startsWith(m6)); const salvo = mh ? {uf: mh[3], mun: mh[0]} : store.get("local");
   const ini = salvo && UFS[salvo.uf] && META.ufs.includes(salvo.uf) ? salvo : PADRAO;
   const h = location.hash.slice(1);
   const link = /^escola-\d{8}$/.test(h);
@@ -2538,7 +2545,7 @@ async function iniciar(){
   await trocarUF(ini.uf, ini.mun && MUN_POR_ID.has(ini.mun) ? ini.mun : null);
   if (link) setView(h);
 }
-iniciar();
+iniciar().finally(() => { hubCidade.pronto = true; });
 
 if ("serviceWorker" in navigator && location.protocol === "https:" && !window.claude)
   navigator.serviceWorker.register("sw.js", {updateViaCache: "none"}).catch(() => {});
