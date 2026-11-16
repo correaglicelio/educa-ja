@@ -1,43 +1,34 @@
-"""Sonda RÁPIDA: Portal da Transparência para o Contas Já."""
+"""Sonda RÁPIDA: Anvisa (avisos) e tempo (INMET, Open-Meteo): no ar? formato? CORS?"""
 from __future__ import annotations
-import csv, io, sys, zipfile, collections, time
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import comum as c  # noqa: E402
+import re, sys, urllib.request, urllib.error
 
-P = "https://portaldatransparencia.gov.br/download-de-dados/"
-def vr(t):
-    try: return float(t.strip().replace(".", "").replace(",", "."))
-    except ValueError: return 0.0
-t0 = time.time()
-c.log("# transferências 202609")
-with c.abrir(P + "transferencias/202609", timeout=300) as r:
-    raw = r.read()
-c.log(f"   zip {len(raw)/1e6:.1f} MB em {time.time()-t0:.0f}s")
-z = zipfile.ZipFile(io.BytesIO(raw))
-c.log("   arquivos: " + str(z.namelist()))
-with z.open(z.namelist()[0]) as f:
-    rd = csv.reader(io.TextIOWrapper(f, encoding="latin-1"), delimiter=";")
-    cab = next(rd); c.log("   colunas: " + " | ".join(cab))
-    ix = {k: i for i, k in enumerate(cab)}
-    n = 0; porf = collections.Counter(); pl = collections.Counter(); tot_mun = collections.Counter(); ufs = collections.Counter(); ex = []
-    for l in rd:
-        n += 1
-        v = vr(l[ix["VALOR TRANSFERIDO"]])
-        ufs[l[ix["UF"]]] += v
-        if l[ix["UF"]] == "MT" and "PONTES E LACERDA" in l[ix["NOME MUNICÍPIO"]].upper():
-            porf[(l[ix.get("NOME FUNÇÃO", ix["AÇÃO"])] if "NOME FUNÇÃO" in ix else "", l[ix["AÇÃO"]], l[ix.get("NOME AÇÃO", ix["AÇÃO"])] if "NOME AÇÃO" in ix else "")] += v
-            pl[l[ix["TIPO FAVORECIDO"]]] += v
-            if len(ex) < 2: ex.append(l)
-    c.log(f"   linhas {n:,}; UFs com valor {len(ufs)}")
-    c.log("   exemplo PL: " + str(ex))
-    c.log("   PL por tipo de favorecido: " + str(pl.most_common(5)))
-    for k, v in porf.most_common(12): c.log(f"   PL {v:12,.2f}  {k}")
-for ref in ("202610", "202611"):
-    for ds in ("novo-bolsa-familia", "transferencias"):
-        try:
-            with c.abrir(P + f"{ds}/{ref}", metodo="HEAD", tentativas=1, timeout=60) as r:
-                c.log(f"# HEAD {ds}/{ref}: {r.status} {r.headers.get('Content-Length')} bytes")
-        except Exception as e:  # noqa: BLE001
-            c.log(f"# HEAD {ds}/{ref}: {str(e)[:80]}")
-        time.sleep(5)
+UA = "Mozilla/5.0 (compatible; HubJa-sonda/1.0)"
+def ver(url, n=700, origin=True):
+    print(f"\n# {url}", flush=True)
+    h = {"User-Agent": UA, "Accept": "*/*"}
+    if origin: h["Origin"] = "https://hubja.com.br"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=40) as r:
+            b = r.read(400000)
+            print(f"   {r.status} {r.headers.get('Content-Type')} ACAO={r.headers.get('Access-Control-Allow-Origin')} bytes>={len(b)}")
+            t = b.decode("utf-8", "replace")
+            print("   " + re.sub(r"\s+", " ", t[:n]))
+            return t
+    except urllib.error.HTTPError as e:
+        print(f"   HTTP {e.code} {e.reason}")
+    except Exception as e:  # noqa: BLE001
+        print(f"   FALHOU: {str(e)[:150]}")
+    return ""
+
+A = "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa"
+t = ver(A, 300)
+for m in sorted(set(re.findall(r'href="([^"]*(?:rss|RSS|feed)[^"]*)"', t)))[:5]: print("   link rss na página:", m)
+print("   itens com data na página:", len(re.findall(r"\d{2}/\d{2}/\d{4}", t)))
+print("   exemplo de links de notícia:", re.findall(r'href="(https://www\.gov\.br/anvisa/pt-br/assuntos/noticias-anvisa/20[^"]+)"', t)[:3])
+for u in (A + "/RSS", A + "/rss.xml", "https://www.gov.br/anvisa/pt-br/RSS", "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/@@search?format=rss"):
+    ver(u, 500)
+I = "https://apiprevmet3.inmet.gov.br"
+ver(I + "/avisos/ativos", 600)
+ver(I + "/avisos/rss", 400)
+ver(I + "/previsao/5106752", 900)
+ver("https://api.open-meteo.com/v1/forecast?latitude=-15.23&longitude=-59.34&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weathercode&timezone=America%2FCuiaba&forecast_days=7", 500)
