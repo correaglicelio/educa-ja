@@ -15,6 +15,10 @@ corpo = (RAIZ / "src" / "index.src.html").read_text("utf-8")
 leaflet = RAIZ / "src" / "leaflet.css"
 corpo = corpo.replace("/*LEAFLET_CSS*/", leaflet.read_text("utf-8") if leaflet.exists() else "")
 
+import re
+ver = re.search(r'VERSAO = "[a-z]+-(v\d+)"', (RAIZ / "public" / "sw.js").read_text("utf-8"))
+corpo = corpo.replace("__VERSAO__", ver.group(1) if ver else "")
+
 pagina = ("<!doctype html>\n<html lang=\"pt-BR\">\n<head>\n<meta charset=\"utf-8\">\n"
           "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">\n"
           "<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}"
