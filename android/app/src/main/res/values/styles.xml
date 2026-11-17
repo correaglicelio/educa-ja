@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="azul">#1C2A78</color>
+    <color name="fundo">#F4F6F8</color>
+    <style name="Tema" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/azul</item>
+        <item name="android:statusBarColor">@color/azul</item>
+        <item name="android:navigationBarColor">@color/azul</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
