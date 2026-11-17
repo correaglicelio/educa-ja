@@ -209,6 +209,15 @@ tr.tot td{font-weight:700; border-bottom:0}
 /* ficha da escola (janela no computador, folha de baixo no celular) */
 .ficha-fundo{position:fixed; inset:0; z-index:2500; background:rgb(10 14 30 / .45); display:grid; place-items:center;
   padding:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) max(16px, env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px))}
+/* ---------- puxar para atualizar ---------- */
+.ptr{position:fixed; top:-46px; left:50%; z-index:2000; width:40px; height:40px; border-radius:50%; background:var(--surface); color:var(--accent);
+  box-shadow:0 3px 12px rgb(0 0 0 / .22); display:grid; place-items:center; opacity:0; transform:translate(-50%, 0); pointer-events:none;
+  transition:opacity .15s} 
+.ptr svg{width:22px; height:22px}
+.ptr.pronto{color:var(--ok, #11845B)}
+.ptr.girando svg{animation:ptrgira .8s linear infinite}
+@keyframes ptrgira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){ .ptr.girando svg{animation:none} }
 .ficha{background:var(--bg); width:min(760px, 100%); max-height:100%; overflow:auto; border-radius:18px; box-shadow:var(--shadow); display:flex; flex-direction:column}
 .ficha-cab{position:sticky; top:0; z-index:2; background:var(--surface); border-bottom:1px solid var(--line); padding:16px 18px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 12px}
 .ficha-cab h3{margin:0; font-family:var(--f-display); font-weight:800; font-size:21px; line-height:1.15; letter-spacing:-.01em; overflow-wrap:anywhere}
@@ -2516,7 +2525,52 @@ function ligar(){
 }
 
 /* ===================== início ===================== */
+/* ===================== puxar para atualizar (no app Android e quando instalado na tela inicial) ===================== */
+function ligarPuxarAtualizar(){
+  const noApp = /EducaJaApp/.test(navigator.userAgent) || matchMedia("(display-mode: standalone)").matches;
+  if (!noApp || !("ontouchstart" in window)) return;
+  const ind = document.createElement("div");
+  ind.className = "ptr"; ind.setAttribute("aria-hidden", "true");
+  ind.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>`;
+  document.body.append(ind);
+  const LIMITE = 70;
+  let y0 = null, x0 = 0, d = 0;
+  // só começa se o toque foi numa área já rolada até o topo (e fora do mapa, que usa o arrastar)
+  const noTopo = alvo => {
+    if (alvo.closest?.(".leaflet-container, input, select, textarea, .tabbar, .ficha")) return false;
+    for (let e = alvo; e && e !== document.documentElement; e = e.parentElement){
+      if (e.scrollTop > 0) return false;
+    }
+    return (document.scrollingElement?.scrollTop || 0) <= 0;
+  };
+  const voltar = () => { ind.classList.remove("pronto"); ind.style.transform = ""; ind.style.opacity = ""; };
+  addEventListener("touchstart", e => {
+    if (e.touches.length !== 1 || ind.classList.contains("girando")) { y0 = null; return; }
+    y0 = noTopo(e.target) ? e.touches[0].clientY : null; x0 = e.touches[0].clientX; d = 0;
+  }, {passive: true});
+  addEventListener("touchmove", e => {
+    if (y0 == null) return;
+    const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+    if (dy <= 0 || dx > dy){ d = 0; voltar(); if (dy < -8 || dx > 24) y0 = null; return; }
+    d = Math.min(dy * 0.5, 100);
+    ind.style.opacity = Math.min(1, d / 50);
+    ind.style.transform = `translate(-50%, ${d}px) rotate(${d * 3.2}deg)`;
+    ind.classList.toggle("pronto", d >= LIMITE);
+  }, {passive: true});
+  const soltar = () => {
+    if (y0 == null) return;
+    y0 = null;
+    if (d >= LIMITE){
+      ind.classList.add("girando");
+      ind.style.transform = "translate(-50%, 70px)";
+      setTimeout(() => location.reload(), 250);
+    } else voltar();
+  };
+  addEventListener("touchend", soltar, {passive: true});
+  addEventListener("touchcancel", () => { y0 = null; voltar(); }, {passive: true});
+}
 async function iniciar(){
+  ligarPuxarAtualizar();
   ligar();
   try {
     const [mj, meta, im, ib] = await Promise.all([getJSON("data/municipios.json"), getJSON("data/escolas/meta.json"),
