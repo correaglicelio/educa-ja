@@ -142,7 +142,7 @@ jobs:
       cancel-in-progress: true
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -156,4 +156,11 @@ jobs:
         with:
           path: public
       - id: deploy
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - name: Aguardar e tentar publicar de novo (falha passageira do GitHub)
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 60
+      - id: deploy2
+        if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
